@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>{{ league_name }} Standings</h2>
+
+    <div class="league-selector">
+        {% for code, name in leagues.items() %}
+            <a href="/standings?league={{ code }}"
+               class="league-btn {% if selected == code %}active{% endif %}">
+                {{ name }}
+            </a>
+        {% endfor %}
+    </div>
+
+    <table class="standings-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Team</th>
+                <th>P</th>
+                <th>W</th>
+                <th>D</th>
+                <th>L</th>
+                <th>GF</th>
+                <th>GA</th>
+                <th>GD</th>
+                <th>Pts</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for team in table %}
+            <tr>
+                <td>{{ team.position }}</td>
+                <td>
+                    <img src="{{ team.team.crest }}" alt="" width="20">
+                    {{ team.team.name }}
+                </td>
+                <td>{{ team.playedGames }}</td>
+                <td>{{ team.won }}</td>
+                <td>{{ team.draw }}</td>
+                <td>{{ team.lost }}</td>
+                <td>{{ team.goalsFor }}</td>
+                <td>{{ team.goalsAgainst }}</td>
+                <td>{{ team.goalDifference }}</td>
+                <td><strong>{{ team.points }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

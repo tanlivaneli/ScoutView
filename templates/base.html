@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScoutView</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav>
+        <a href="/">ScoutView</a>
+        <a href="/standings">Standings</a>
+        <a href="/results">Results</a>
+        <a href="/fixtures">Fixtures</a>
+        <a href="/scorers">Top Scorers</a>
+    </nav>
+
+    {% block content %}{% endblock %}
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
