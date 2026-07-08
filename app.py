@@ -16,6 +16,15 @@ LEAGUES = {
     "CL": "Champions League"
 }
 
+def get_all_teams():
+    teams = []
+    for code in LEAGUES:
+        url = f"{BASE_URL}/competitions/{code}/teams"
+        response = requests.get(url, headers=HEADERS)
+        data = response.json()
+        teams.extend(data.get("teams", []))
+    return teams
+
 @app.route("/")
 def home():
     return render_template("home.html", leagues=LEAGUES)
@@ -60,6 +69,38 @@ def scorers():
     scorers_list = data.get("scorers", [])
     league_name = LEAGUES.get(league_code, "Unknown League")
     return render_template("scorers.html", scorers=scorers_list, leagues=LEAGUES, selected=league_code, league_name=league_name)
+
+@app.route("/team/<int:team_id>")
+def team(team_id):
+    team_url = f"{BASE_URL}/teams/{team_id}"
+    matches_url = f"{BASE_URL}/teams/{team_id}/matches?status=FINISHED&limit=5"
+    next_url = f"{BASE_URL}/teams/{team_id}/matches?status=SCHEDULED&limit=1"
+
+    team_data = requests.get(team_url, headers=HEADERS).json()
+    matches_data = requests.get(matches_url, headers=HEADERS).json()
+    next_data = requests.get(next_url, headers=HEADERS).json()
+
+    recent_matches = matches_data.get("matches", [])
+    recent_matches.reverse()
+    next_match = next_data.get("matches", [])
+    next_match = next_match[0] if next_match else None
+
+    return render_template("team.html", team=team_data, recent_matches=recent_matches, next_match=next_match)
+
+@app.route("/search")
+def search():
+    query = request.args.get("q", "").strip().lower()
+    if not query:
+        return render_template("home.html", leagues=LEAGUES)
+    all_teams = get_all_teams()
+    matched = [t for t in all_teams if query in t["name"].lower()]
+    seen = set()
+    unique_teams = []
+    for t in matched:
+        if t["id"] not in seen:
+            seen.add(t["id"])
+            unique_teams.append(t)
+    return render_template("home.html", leagues=LEAGUES, teams=unique_teams, query=query)
 
 if __name__ == "__main__":
     app.run(debug=True)

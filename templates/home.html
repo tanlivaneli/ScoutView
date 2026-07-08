@@ -4,5 +4,34 @@
 <div class="hero">
     <h1>Welcome to ScoutView</h1>
     <p>Your live football statistics dashboard</p>
+
+    <form action="/search" method="GET" class="search-form">
+        <input type="text" name="q" placeholder="Search for a team..."
+               value="{{ query or '' }}" class="search-input">
+        <button type="submit" class="search-btn">Search</button>
+    </form>
+
+    {% if teams is defined and teams %}
+        <div class="search-results">
+            <h3>Search Results for "{{ query }}"</h3>
+            {% for team in teams %}
+            <a href="/team/{{ team.id }}" class="team-result">
+                <img src="{{ team.crest }}" alt="" width="30">
+                {{ team.name }}
+            </a>
+            {% endfor %}
+        </div>
+    {% elif query is defined and query and (teams is not defined or not teams) %}
+        <p style="color: #8b949e; margin-top: 20px;">No teams found for "{{ query }}"</p>
+    {% endif %}
+</div>
+
+<div class="container">
+    <h2 style="color: #238636; margin-bottom: 20px;">Quick Access</h2>
+    <div class="league-selector">
+        {% for code, name in leagues.items() %}
+            <a href="/standings?league={{ code }}" class="league-btn">{{ name }}</a>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}

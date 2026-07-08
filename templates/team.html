@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="team-header">
+        <img src="{{ team.crest }}" alt="{{ team.name }}" width="80">
+        <div>
+            <h2>{{ team.name }}</h2>
+            <p>Founded: {{ team.founded }}</p>
+            <p>Stadium: {{ team.venue }}</p>
+        </div>
+    </div>
+
+    {% if next_match %}
+    <div class="section">
+        <h3>Next Match</h3>
+        <div class="match-card">
+            <div class="match-date">{{ next_match.utcDate[:10] }}</div>
+            <div class="match-teams">
+                <span class="team home">{{ next_match.homeTeam.name }}</span>
+                <span class="score">vs</span>
+                <span class="team away">{{ next_match.awayTeam.name }}</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="section">
+        <h3>Recent Results</h3>
+        {% if recent_matches %}
+        <div class="matches-list">
+            {% for match in recent_matches %}
+            <div class="match-card">
+                <div class="match-date">{{ match.utcDate[:10] }}</div>
+                <div class="match-teams">
+                    <span class="team home">{{ match.homeTeam.name }}</span>
+                    <span class="score">{{ match.score.fullTime.home }} - {{ match.score.fullTime.away }}</span>
+                    <span class="team away">{{ match.awayTeam.name }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color: #8b949e;">No recent results available.</p>
+        {% endif %}
+    </div>
+
+    {% if team.squad %}
+    <div class="section">
+        <h3>Squad</h3>
+        <div class="squad-grid">
+            {% for player in team.squad %}
+            <div class="player-card">
+                <strong>{{ player.name }}</strong>
+                <span>{{ player.position or 'N/A' }}</span>
+                <span>{{ player.nationality }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
