@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>{{ league_name }} Top Scorers</h2>
+
+    <div class="league-selector">
+        {% for code, name in leagues.items() %}
+            <a href="/scorers?league={{ code }}"
+               class="league-btn {% if selected == code %}active{% endif %}">
+                {{ name }}
+            </a>
+        {% endfor %}
+    </div>
+
+    <table class="standings-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Player</th>
+                <th>Team</th>
+                <th>Nationality</th>
+                <th>Goals</th>
+                <th>Assists</th>
+                <th>Penalties</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if scorers %}
+                {% for item in scorers %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ item.player.name }}</td>
+                    <td>
+                        <img src="{{ item.team.crest }}" alt="" width="20">
+                        {{ item.team.name }}
+                    </td>
+                    <td>{{ item.player.nationality }}</td>
+                    <td><strong>{{ item.goals }}</strong></td>
+                    <td>{{ item.assists or 0 }}</td>
+                    <td>{{ item.penalties or 0 }}</td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: #8b949e; padding: 40px;">
+                        No scorer data available for this league yet.
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

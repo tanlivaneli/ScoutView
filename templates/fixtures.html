@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>{{ league_name }} Fixtures</h2>
+
+    <div class="league-selector">
+        {% for code, name in leagues.items() %}
+            <a href="/fixtures?league={{ code }}"
+               class="league-btn {% if selected == code %}active{% endif %}">
+                {{ name }}
+            </a>
+        {% endfor %}
+    </div>
+
+    <div class="matches-list">
+        {% if matches %}
+            {% for match in matches %}
+            <div class="match-card">
+                <div class="match-date">{{ match.utcDate[:10] }}</div>
+                <div class="match-teams">
+                    <span class="team home">
+                        <img src="{{ match.homeTeam.crest }}" alt="" width="20">
+                        {{ match.homeTeam.name }}
+                    </span>
+                    <span class="score">vs</span>
+                    <span class="team away">
+                        <img src="{{ match.awayTeam.crest }}" alt="" width="20">
+                        {{ match.awayTeam.name }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="color: #8b949e; text-align: center; padding: 40px;">No upcoming fixtures available for this league.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -30,5 +30,36 @@ def standings():
     league_name = LEAGUES.get(league_code, "Unknown League")
     return render_template("standings.html", table=table, leagues=LEAGUES, selected=league_code, league_name=league_name)
 
+@app.route("/results")
+def results():
+    league_code = request.args.get("league", "PL")
+    url = f"{BASE_URL}/competitions/{league_code}/matches?status=FINISHED"
+    response = requests.get(url, headers=HEADERS)
+    data = response.json()
+    matches = data.get("matches", [])[-20:]
+    matches.reverse()
+    league_name = LEAGUES.get(league_code, "Unknown League")
+    return render_template("results.html", matches=matches, leagues=LEAGUES, selected=league_code, league_name=league_name)
+
+@app.route("/fixtures")
+def fixtures():
+    league_code = request.args.get("league", "PL")
+    url = f"{BASE_URL}/competitions/{league_code}/matches?status=SCHEDULED"
+    response = requests.get(url, headers=HEADERS)
+    data = response.json()
+    matches = data.get("matches", [])[:20]
+    league_name = LEAGUES.get(league_code, "Unknown League")
+    return render_template("fixtures.html", matches=matches, leagues=LEAGUES, selected=league_code, league_name=league_name)
+
+@app.route("/scorers")
+def scorers():
+    league_code = request.args.get("league", "PL")
+    url = f"{BASE_URL}/competitions/{league_code}/scorers?limit=20"
+    response = requests.get(url, headers=HEADERS)
+    data = response.json()
+    scorers_list = data.get("scorers", [])
+    league_name = LEAGUES.get(league_code, "Unknown League")
+    return render_template("scorers.html", scorers=scorers_list, leagues=LEAGUES, selected=league_code, league_name=league_name)
+
 if __name__ == "__main__":
     app.run(debug=True)
