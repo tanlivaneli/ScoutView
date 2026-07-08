@@ -430,3 +430,28 @@ footer a {
 .score-home-loss { color: #da3633; font-weight: 800; }
 .score-away-loss { color: #da3633; font-weight: 800; }
 .score-draw { color: #e3b341; font-weight: 800; }
+.team-header-info {
+    flex: 1;
+}
+
+.team-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.meta-tag {
+    background-color: #21262d;
+    color: #8b949e;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    border: 1px solid #30363d;
+}
+
+.player-position {
+    color: #238636 !important;
+    font-size: 12px !important;
+    font-weight: 600;
+}

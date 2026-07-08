@@ -2,62 +2,120 @@
 
 {% block content %}
 <div class="container">
+
+    <!-- TEAM HEADER -->
     <div class="team-header">
-        <img src="{{ team.crest }}" alt="{{ team.name }}" width="80">
-        <div>
+        <img src="{{ team.crest }}" alt="{{ team.name }}" width="100">
+        <div class="team-header-info">
             <h2>{{ team.name }}</h2>
-            <p>Founded: {{ team.founded }}</p>
-            <p>Stadium: {{ team.venue }}</p>
+            <div class="team-meta">
+                {% if team.founded %}
+                <span class="meta-tag">📅 Founded {{ team.founded }}</span>
+                {% endif %}
+                {% if team.venue %}
+                <span class="meta-tag">🏟️ {{ team.venue }}</span>
+                {% endif %}
+                {% if team.address %}
+                <span class="meta-tag">📍 {{ team.address }}</span>
+                {% endif %}
+            </div>
+            {% if team.colors %}
+            <p style="color:#8b949e; font-size:13px; margin-top:8px;">Club colours: {{ team.colors }}</p>
+            {% endif %}
         </div>
     </div>
 
+    <!-- NEXT MATCH -->
     {% if next_match %}
     <div class="section">
         <h3>Next Match</h3>
         <div class="match-card">
-            <div class="match-date">{{ next_match.utcDate[:10] }}</div>
+            <div class="match-date">
+                {{ next_match.utcDate[:10] }}<br>
+                <span style="font-size:11px; color:#238636;">{{ next_match.utcDate[11:16] }} UTC</span>
+            </div>
             <div class="match-teams">
-                <span class="team home">{{ next_match.homeTeam.name }}</span>
-                <span class="score">vs</span>
-                <span class="team away">{{ next_match.awayTeam.name }}</span>
+                <span class="team home">
+                    {% if next_match.homeTeam.crest %}
+                    <img src="{{ next_match.homeTeam.crest }}" alt="" width="22">
+                    {% endif %}
+                    {{ next_match.homeTeam.name }}
+                </span>
+                <span class="score" style="font-size:14px; color:#8b949e; font-weight:600;">vs</span>
+                <span class="team away">
+                    {% if next_match.awayTeam.crest %}
+                    <img src="{{ next_match.awayTeam.crest }}" alt="" width="22">
+                    {% endif %}
+                    {{ next_match.awayTeam.name }}
+                </span>
+            </div>
+            <div class="match-status">
+                <span style="color:#8b949e; font-size:12px;">{{ next_match.competition.name }}</span>
             </div>
         </div>
     </div>
     {% endif %}
 
+    <!-- RECENT RESULTS -->
     <div class="section">
         <h3>Recent Results</h3>
         {% if recent_matches %}
         <div class="matches-list">
             {% for match in recent_matches %}
             <div class="match-card">
-                <div class="match-date">{{ match.utcDate[:10] }}</div>
+                <div class="match-date">
+                    {{ match.utcDate[:10] }}<br>
+                    <span style="font-size:11px; color:#8b949e;">{{ match.competition.name }}</span>
+                </div>
                 <div class="match-teams">
-                    <span class="team home">{{ match.homeTeam.name }}</span>
-                    <span class="score">{{ match.score.fullTime.home }} - {{ match.score.fullTime.away }}</span>
-                    <span class="team away">{{ match.awayTeam.name }}</span>
+                    <span class="team home">
+                        {% if match.homeTeam.crest %}
+                        <img src="{{ match.homeTeam.crest }}" alt="" width="20">
+                        {% endif %}
+                        {{ match.homeTeam.name }}
+                    </span>
+                    <span class="score">
+                        {% set h = match.score.fullTime.home %}
+                        {% set a = match.score.fullTime.away %}
+                        <span class="{% if h > a %}score-home-win{% elif h < a %}score-home-loss{% else %}score-draw{% endif %}">{{ h }}</span>
+                        <span style="color:#8b949e; font-size:14px; font-weight:400;"> - </span>
+                        <span class="{% if a > h %}score-away-win{% elif a < h %}score-away-loss{% else %}score-draw{% endif %}">{{ a }}</span>
+                    </span>
+                    <span class="team away">
+                        {% if match.awayTeam.crest %}
+                        <img src="{{ match.awayTeam.crest }}" alt="" width="20">
+                        {% endif %}
+                        {{ match.awayTeam.name }}
+                    </span>
                 </div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <p style="color: #8b949e;">No recent results available.</p>
+        <p style="color: #8b949e; padding: 20px 0;">No recent results available — season may not have started yet.</p>
         {% endif %}
     </div>
 
+    <!-- SQUAD -->
     {% if team.squad %}
     <div class="section">
-        <h3>Squad</h3>
+        <h3>Squad ({{ team.squad | length }} players)</h3>
         <div class="squad-grid">
             {% for player in team.squad %}
             <div class="player-card">
                 <strong>{{ player.name }}</strong>
-                <span>{{ player.position or 'N/A' }}</span>
-                <span>{{ player.nationality }}</span>
+                <span class="player-position">{{ player.position or 'N/A' }}</span>
+                <span>🌍 {{ player.nationality }}</span>
             </div>
             {% endfor %}
         </div>
     </div>
+    {% else %}
+    <div class="section">
+        <h3>Squad</h3>
+        <p style="color: #8b949e; padding: 20px 0;">Squad information not available.</p>
+    </div>
     {% endif %}
+
 </div>
 {% endblock %}
