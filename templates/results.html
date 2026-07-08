@@ -14,24 +14,46 @@
     </div>
 
     <div class="matches-list">
-        {% for match in matches %}
-        <div class="match-card">
-            <div class="match-date">{{ match.utcDate[:10] }}</div>
-            <div class="match-teams">
-                <span class="team home">
-                    <img src="{{ match.homeTeam.crest }}" alt="" width="20">
-                    {{ match.homeTeam.name }}
-                </span>
-                <span class="score">
-                    {{ match.score.fullTime.home }} - {{ match.score.fullTime.away }}
-                </span>
-                <span class="team away">
-                    <img src="{{ match.awayTeam.crest }}" alt="" width="20">
-                    {{ match.awayTeam.name }}
-                </span>
+        {% if matches %}
+            {% for match in matches %}
+            <div class="match-card">
+                <div class="match-date">
+                    {{ match.utcDate[:10] }}<br>
+                    <span style="font-size:11px;">MD {{ match.matchday }}</span>
+                </div>
+                <div class="match-teams">
+                    <span class="team home">
+                        <img src="{{ match.homeTeam.crest }}" alt="" width="22">
+                        {{ match.homeTeam.name }}
+                    </span>
+                    <span class="score">
+                        {% set h = match.score.fullTime.home %}
+                        {% set a = match.score.fullTime.away %}
+                        <span class="{% if h > a %}score-home-win{% elif h < a %}score-home-loss{% else %}score-draw{% endif %}">{{ h }}</span>
+                        <span style="color:#8b949e; font-size:14px; font-weight:400;"> - </span>
+                        <span class="{% if a > h %}score-away-win{% elif a < h %}score-away-loss{% else %}score-draw{% endif %}">{{ a }}</span>
+                    </span>
+                    <span class="team away">
+                        <img src="{{ match.awayTeam.crest }}" alt="" width="22">
+                        {{ match.awayTeam.name }}
+                    </span>
+                </div>
+                <div class="match-status">
+                    {% set h = match.score.fullTime.home %}
+                    {% set a = match.score.fullTime.away %}
+                    {% if h > a %}
+                        <span class="badge badge-w">H</span>
+                    {% elif a > h %}
+                        <span class="badge badge-l">A</span>
+                    {% else %}
+                        <span class="badge badge-d">D</span>
+                    {% endif %}
+                </div>
             </div>
-        </div>
-        {% endfor %}
+            {% endfor %}
+        {% else %}
+            <p style="color: #8b949e; text-align: center; padding: 40px;">No results available for this league yet.</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

@@ -2,18 +2,18 @@
 
 {% block content %}
 <div class="hero">
-    <h1>Welcome to ScoutView</h1>
-    <p>Your live football statistics dashboard</p>
+    <h1>Scout<span>View</span></h1>
+    <p>Live football statistics across Europe's top leagues</p>
 
     <form action="/search" method="GET" class="search-form">
-        <input type="text" name="q" placeholder="Search for a team..."
+        <input type="text" name="q" placeholder="Search for a team e.g. Arsenal, Barcelona..."
                value="{{ query or '' }}" class="search-input">
         <button type="submit" class="search-btn">Search</button>
     </form>
 
     {% if teams is defined and teams %}
         <div class="search-results">
-            <h3>Search Results for "{{ query }}"</h3>
+            <h3>Results for "{{ query }}"</h3>
             {% for team in teams %}
             <a href="/team/{{ team.id }}" class="team-result">
                 <img src="{{ team.crest }}" alt="" width="30">
@@ -26,8 +26,8 @@
     {% endif %}
 </div>
 
-<div class="container">
-    <h2 style="color: #238636; margin-bottom: 20px;">Quick Access</h2>
+<div class="quick-access">
+    <h2>Quick Access — Standings</h2>
     <div class="league-selector">
         {% for code, name in leagues.items() %}
             <a href="/standings?league={{ code }}" class="league-btn">{{ name }}</a>
