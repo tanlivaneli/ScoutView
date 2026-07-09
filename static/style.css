@@ -14,9 +14,9 @@ body {
 nav {
     background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
     padding: 0 40px;
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    gap: 40px;
     border-bottom: 2px solid #238636;
     height: 65px;
     position: sticky;
@@ -25,29 +25,36 @@ nav {
     box-shadow: 0 2px 20px rgba(35, 134, 54, 0.2);
 }
 
-nav a {
+.nav-links {
+    display: flex;
+    gap: 50px;
+    align-items: center;
+    justify-content: center;
+}
+.nav-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.nav-tag {
+    background-color: #21262d;
     color: #8b949e;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
     text-decoration: none;
-    font-size: 15px;
-    font-weight: 500;
-    transition: color 0.2s;
-    padding: 5px 0;
-    border-bottom: 2px solid transparent;
+    border: 1px solid #30363d;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
 }
 
-nav a:first-child {
-    color: #238636;
-    font-size: 22px;
-    font-weight: 800;
-    margin-right: 20px;
-    letter-spacing: 1px;
-    border-bottom: none;
-}
-
-nav a:hover {
+.nav-tag:hover {
+    background-color: #238636;
     color: #ffffff;
+    border-color: #238636;
 }
-
 /* HERO */
 .hero {
     text-align: center;
@@ -454,4 +461,144 @@ footer a {
     color: #238636 !important;
     font-size: 12px !important;
     font-weight: 600;
+}
+/* HOME CARDS */
+.home-sections {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+    padding: 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.home-card {
+    background-color: #0d1117;
+    border: 1px solid #21262d;
+    border-radius: 12px;
+    padding: 25px;
+    transition: border-color 0.2s, transform 0.1s;
+}
+
+.home-card:hover {
+    border-color: #238636;
+    transform: translateY(-3px);
+}
+
+.home-card-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+}
+
+.home-card h3 {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.home-card p {
+    color: #8b949e;
+    font-size: 13px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.home-card-links {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.home-link {
+    color: #8b949e;
+    text-decoration: none;
+    font-size: 13px;
+    padding: 4px 0;
+    border-bottom: 1px solid #21262d;
+    transition: color 0.2s;
+}
+
+.home-link:hover {
+    color: #238636;
+}
+
+/* NAV LINKS */
+.nav-logo {
+    color: #238636 !important;
+    font-size: 22px !important;
+    font-weight: 800 !important;
+    margin-right: 20px;
+    text-decoration: none;
+}
+
+.nav-link {
+    color: #8b949e !important;
+    text-decoration: none;
+    font-size: 17px !important;
+    font-weight: 600 !important;
+    transition: color 0.2s;
+    padding: 5px 0;
+}
+
+.nav-link:hover {
+    color: #ffffff !important;
+}
+
+/* CLICKABLE ROWS */
+.clickable-row {
+    cursor: pointer;
+}
+
+.clickable-row:hover td {
+    background-color: #161b22;
+    color: #238636;
+}
+
+/* CLICKABLE TEAM LINKS */
+.team-link {
+    text-decoration: none;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 220px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.team-link:hover {
+    color: #238636;
+}
+
+.team-link.away {
+    justify-content: flex-end;
+}
+.home-card-title {
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 18px;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 8px;
+    transition: color 0.2s;
+}
+
+.home-card-title:hover {
+    color: #238636;
+}
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.stats-section h3 {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #21262d;
 }

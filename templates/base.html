@@ -3,19 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ScoutView</title>
+    <title>ScoutView — Live Football Stats</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <nav>
-        <a href="/">ScoutView</a>
-        <a href="/standings">Standings</a>
-        <a href="/results">Results</a>
-        <a href="/fixtures">Fixtures</a>
-        <a href="/scorers">Top Scorers</a>
+        <a href="/" class="nav-logo">⚽ ScoutView</a>
+        <div class="nav-links">
+            <a href="/standings" class="nav-link">📊 Standings</a>
+            <a href="/results" class="nav-link">⚽ Results</a>
+            <a href="/fixtures" class="nav-link">📅 Fixtures</a>
+            <a href="/scorers" class="nav-link">🥇 Top Scorers</a>
+            <a href="/assisters" class="nav-link">🎯 Top Assisters</a>
+        </div>
     </nav>
 
     {% block content %}{% endblock %}
+
+    <footer>
+        <p>Built by <a href="https://github.com/tanlivaneli" target="_blank">Tan Livaneli</a> · Powered by football-data.org</p>
+    </footer>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>

@@ -26,12 +26,60 @@
     {% endif %}
 </div>
 
-<div class="quick-access">
-    <h2>Quick Access — Standings</h2>
-    <div class="league-selector">
-        {% for code, name in leagues.items() %}
-            <a href="/standings?league={{ code }}" class="league-btn">{{ name }}</a>
-        {% endfor %}
+<div class="home-sections">
+    <div class="home-card">
+        <div class="home-card-icon">📊</div>
+        <a href="/standings" class="home-card-title">Standings</a>
+        <p>Live league tables across Europe's top competitions</p>
+        <div class="home-card-links">
+            {% for code, name in leagues.items() %}
+            <a href="/standings?league={{ code }}" class="home-link">{{ name }}</a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="home-card">
+        <div class="home-card-icon">⚽</div>
+        <a href="/results" class="home-card-title">Results</a>
+        <p>Latest match results and scores</p>
+        <div class="home-card-links">
+            {% for code, name in leagues.items() %}
+            <a href="/results?league={{ code }}" class="home-link">{{ name }}</a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="home-card">
+        <div class="home-card-icon">📅</div>
+        <a href="/fixtures" class="home-card-title">Fixtures</a>
+        <p>Upcoming matches and kick-off times</p>
+        <div class="home-card-links">
+            {% for code, name in leagues.items() %}
+            <a href="/fixtures?league={{ code }}" class="home-link">{{ name }}</a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="home-card">
+        <div class="home-card-icon">🥇</div>
+        <a href="/scorers" class="home-card-title">Top Scorers</a>
+        <p>Golden boot leaderboards by league</p>
+        <div class="home-card-links">
+            {% for code, name in leagues.items() %}
+            <a href="/scorers?league={{ code }}" class="home-link">{{ name }}</a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="home-card">
+        <div class="home-card-icon">🎯</div>
+        <a href="/assisters" class="home-card-title">Top Assisters</a>
+        <p>Assist leaderboards across top European leagues</p>
+        <div class="home-card-links">
+            {% for code, name in leagues.items() %}
+            <a href="/assisters?league={{ code }}" class="home-link">{{ name }}</a>
+            {% endfor %}
+        </div>
     </div>
 </div>
 {% endblock %}

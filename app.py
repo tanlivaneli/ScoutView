@@ -70,6 +70,21 @@ def scorers():
     league_name = LEAGUES.get(league_code, "Unknown League")
     return render_template("scorers.html", scorers=scorers_list, leagues=LEAGUES, selected=league_code, league_name=league_name)
 
+@app.route("/assisters")
+def assisters():
+    league_code = request.args.get("league", "PL")
+    url = f"{BASE_URL}/competitions/{league_code}/scorers?limit=50"
+    response = requests.get(url, headers=HEADERS)
+    data = response.json()
+    all_players = data.get("scorers", [])
+    assisters_list = sorted(
+        [p for p in all_players if p.get("assists") and p["assists"] > 0],
+        key=lambda x: x["assists"],
+        reverse=True
+    )[:20]
+    league_name = LEAGUES.get(league_code, "Unknown League")
+    return render_template("assisters.html", assisters=assisters_list, leagues=LEAGUES, selected=league_code, league_name=league_name)
+
 @app.route("/team/<int:team_id>")
 def team(team_id):
     team_url = f"{BASE_URL}/teams/{team_id}"

@@ -30,7 +30,7 @@
         </thead>
         <tbody>
             {% for team in table %}
-            <tr>
+            <tr class="clickable-row" onclick="window.location='/team/{{ team.team.id }}'">
                 <td>{{ team.position }}</td>
                 <td>
                     <img src="{{ team.team.crest }}" alt="" width="20">
