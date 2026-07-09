@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="player-header">
+        {% if player.photo %}
+        <img src="{{ player.photo }}" alt="{{ player.name }}" class="player-header-photo">
+        {% endif %}
+        <div class="player-header-info">
+            <h2>{{ player.name }}</h2>
+            <div class="team-meta">
+                {% if player.nationality %}
+                <span class="meta-tag">🌍 {{ player.nationality }}</span>
+                {% endif %}
+                {% if player.age %}
+                <span class="meta-tag">🎂 Age {{ player.age }}</span>
+                {% endif %}
+                {% if player.height %}
+                <span class="meta-tag">📏 {{ player.height }}</span>
+                {% endif %}
+                {% if player.weight %}
+                <span class="meta-tag">⚖️ {{ player.weight }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% for item in stats %}
+    {% set s = item.statistics[0] %}
+    <div class="section">
+        <h3>{{ s.league.name }} — {{ s.team.name }}</h3>
+        <div class="stats-cards">
+            <div class="stat-box">
+                <span class="stat-number">{{ s.games.appearences or 0 }}</span>
+                <span class="stat-label">Appearances</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-number">{{ s.games.minutes or 0 }}</span>
+                <span class="stat-label">Minutes</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-number" style="color:#238636;">{{ s.goals.total or 0 }}</span>
+                <span class="stat-label">Goals</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-number" style="color:#238636;">{{ s.goals.assists or 0 }}</span>
+                <span class="stat-label">Assists</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-number">{{ s.shots.total or 0 }}</span>
+                <span class="stat-label">Shots</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-number">{{ s.passes.total or 0 }}</span>
+                <span class="stat-label">Passes</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-number">{{ s.dribbles.attempts or 0 }}</span>
+                <span class="stat-label">Dribble Attempts</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-number">{{ s.dribbles.success or 0 }}</span>
+                <span class="stat-label">Dribbles Won</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-number" style="color:#e3b341;">{{ s.cards.yellow or 0 }}</span>
+                <span class="stat-label">Yellow Cards</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-number" style="color:#da3633;">{{ s.cards.red or 0 }}</span>
+                <span class="stat-label">Red Cards</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-number">{{ s.games.rating[:4] if s.games.rating else 'N/A' }}</span>
+                <span class="stat-label">Rating</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-number">{{ s.games.position or 'N/A' }}</span>
+                <span class="stat-label">Position</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

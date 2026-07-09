@@ -7,6 +7,10 @@ API_KEY = "1bc6cda045d54c4393a00dab3bc11cf8"
 BASE_URL = "https://api.football-data.org/v4"
 HEADERS = {"X-Auth-Token": API_KEY}
 
+RAPID_KEY = "fa18cbb0debe873d3a19dc76bc042c93"
+RAPID_HOST = "https://v3.football.api-sports.io"
+RAPID_HEADERS = {"x-apisports-key": RAPID_KEY}
+
 LEAGUES = {
     "PL": "Premier League",
     "BL1": "Bundesliga",
@@ -15,6 +19,16 @@ LEAGUES = {
     "FL1": "Ligue 1",
     "CL": "Champions League"
 }
+
+RAPID_LEAGUES = {
+    39: "Premier League",
+    78: "Bundesliga",
+    140: "La Liga",
+    135: "Serie A",
+    61: "Ligue 1",
+    2: "Champions League"
+}
+
 
 def get_all_teams():
     teams = []
@@ -25,9 +39,11 @@ def get_all_teams():
         teams.extend(data.get("teams", []))
     return teams
 
+
 @app.route("/")
 def home():
     return render_template("home.html", leagues=LEAGUES)
+
 
 @app.route("/standings")
 def standings():
@@ -37,7 +53,9 @@ def standings():
     data = response.json()
     table = data["standings"][0]["table"]
     league_name = LEAGUES.get(league_code, "Unknown League")
-    return render_template("standings.html", table=table, leagues=LEAGUES, selected=league_code, league_name=league_name)
+    return render_template("standings.html", table=table, leagues=LEAGUES, selected=league_code,
+                           league_name=league_name)
+
 
 @app.route("/results")
 def results():
@@ -48,7 +66,9 @@ def results():
     matches = data.get("matches", [])[-20:]
     matches.reverse()
     league_name = LEAGUES.get(league_code, "Unknown League")
-    return render_template("results.html", matches=matches, leagues=LEAGUES, selected=league_code, league_name=league_name)
+    return render_template("results.html", matches=matches, leagues=LEAGUES, selected=league_code,
+                           league_name=league_name)
+
 
 @app.route("/fixtures")
 def fixtures():
@@ -58,7 +78,9 @@ def fixtures():
     data = response.json()
     matches = data.get("matches", [])[:20]
     league_name = LEAGUES.get(league_code, "Unknown League")
-    return render_template("fixtures.html", matches=matches, leagues=LEAGUES, selected=league_code, league_name=league_name)
+    return render_template("fixtures.html", matches=matches, leagues=LEAGUES, selected=league_code,
+                           league_name=league_name)
+
 
 @app.route("/scorers")
 def scorers():
@@ -68,7 +90,9 @@ def scorers():
     data = response.json()
     scorers_list = data.get("scorers", [])
     league_name = LEAGUES.get(league_code, "Unknown League")
-    return render_template("scorers.html", scorers=scorers_list, leagues=LEAGUES, selected=league_code, league_name=league_name)
+    return render_template("scorers.html", scorers=scorers_list, leagues=LEAGUES, selected=league_code,
+                           league_name=league_name)
+
 
 @app.route("/assisters")
 def assisters():
@@ -83,7 +107,9 @@ def assisters():
         reverse=True
     )[:20]
     league_name = LEAGUES.get(league_code, "Unknown League")
-    return render_template("assisters.html", assisters=assisters_list, leagues=LEAGUES, selected=league_code, league_name=league_name)
+    return render_template("assisters.html", assisters=assisters_list, leagues=LEAGUES, selected=league_code,
+                           league_name=league_name)
+
 
 @app.route("/team/<int:team_id>")
 def team(team_id):
@@ -102,6 +128,7 @@ def team(team_id):
 
     return render_template("team.html", team=team_data, recent_matches=recent_matches, next_match=next_match)
 
+
 @app.route("/search")
 def search():
     query = request.args.get("q", "").strip().lower()
@@ -116,6 +143,48 @@ def search():
             seen.add(t["id"])
             unique_teams.append(t)
     return render_template("home.html", leagues=LEAGUES, teams=unique_teams, query=query)
+
+
+@app.route("/player-search")
+def player_search():
+    query = request.args.get("q", "").strip()
+    if not query:
+        return render_template("home.html", leagues=LEAGUES)
+
+    players = []
+    seen = set()
+    season = 2024
+
+    for league_id in RAPID_LEAGUES:
+        url = f"{RAPID_HOST}/players?search={query}&league={league_id}&season={season}"
+        response = requests.get(url, headers=RAPID_HEADERS)
+        data = response.json()
+        for item in data.get("response", []):
+            pid = item["player"]["id"]
+            if pid not in seen:
+                seen.add(pid)
+                players.append(item)
+
+    return render_template("player_search.html", players=players, query=query, leagues=LEAGUES)
+
+
+@app.route("/player/<int:player_id>")
+def player_profile(player_id):
+    all_stats = []
+    season = 2024
+    for league_id, league_name in RAPID_LEAGUES.items():
+        url = f"{RAPID_HOST}/players?id={player_id}&league={league_id}&season={season}"
+        response = requests.get(url, headers=RAPID_HEADERS)
+        data = response.json()
+        if data.get("response"):
+            all_stats.append(data["response"][0])
+
+    if not all_stats:
+        return render_template("home.html", leagues=LEAGUES)
+
+    player_data = all_stats[0]["player"]
+    return render_template("player_profile.html", player=player_data, stats=all_stats, leagues=LEAGUES)
+
 
 if __name__ == "__main__":
     app.run(debug=True)

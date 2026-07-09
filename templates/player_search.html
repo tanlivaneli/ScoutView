@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Player Search Results for "{{ query }}"</h2>
+
+    {% if players %}
+    <div class="player-search-grid">
+        {% for item in players %}
+        <a href="/player/{{ item.player.id }}" class="player-search-card">
+            {% if item.player.photo %}
+            <img src="{{ item.player.photo }}" alt="{{ item.player.name }}" class="player-photo">
+            {% else %}
+            <div class="player-photo-placeholder">👤</div>
+            {% endif %}
+            <div class="player-search-info">
+                <strong>{{ item.player.name }}</strong>
+                <span>{{ item.statistics[0].team.name if item.statistics else 'Unknown Team' }}</span>
+                <span>{{ item.statistics[0].games.position if item.statistics else '' }}</span>
+                <span>🌍 {{ item.player.nationality }}</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="color: #8b949e; padding: 40px 0; text-align: center;">No players found for "{{ query }}"</p>
+    {% endif %}
+</div>
+{% endblock %}
