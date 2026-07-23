@@ -1,13 +1,17 @@
+import os
 from flask import Flask, render_template, request
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()  # reads variables from a local .env file, if present
 
 app = Flask(__name__)
 
-API_KEY = "1bc6cda045d54c4393a00dab3bc11cf8"
+API_KEY = os.environ["FOOTBALL_DATA_API_KEY"]
 BASE_URL = "https://api.football-data.org/v4"
 HEADERS = {"X-Auth-Token": API_KEY}
 
-RAPID_KEY = "fa18cbb0debe873d3a19dc76bc042c93"
+RAPID_KEY = os.environ["API_SPORTS_KEY"]
 RAPID_HOST = "https://v3.football.api-sports.io"
 RAPID_HEADERS = {"x-apisports-key": RAPID_KEY}
 
