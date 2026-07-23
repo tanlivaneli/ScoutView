@@ -55,12 +55,56 @@ nav {
     color: #ffffff;
     border-color: #238636;
 }
-/* HERO */
+/* HERO — stadium at night: floodlight glows + faint pitch markings */
 .hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
     text-align: center;
-    padding: 80px 20px 60px;
-    background: linear-gradient(180deg, #0d1117 0%, #0a0e1a 100%);
+    padding: 100px 20px 70px;
+    background: radial-gradient(ellipse 60% 50% at 50% 120%, #0f2317 0%, transparent 70%),
+                linear-gradient(180deg, #0d1117 0%, #0a0e1a 100%);
     border-bottom: 1px solid #21262d;
+}
+
+/* four corner floodlights, like looking up at a stadium roof */
+.hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background:
+        radial-gradient(circle 380px at 6% -8%, rgba(46, 160, 67, 0.32), transparent 60%),
+        radial-gradient(circle 380px at 94% -8%, rgba(46, 160, 67, 0.32), transparent 60%),
+        radial-gradient(circle 320px at -4% 90%, rgba(46, 160, 67, 0.14), transparent 65%),
+        radial-gradient(circle 320px at 104% 90%, rgba(46, 160, 67, 0.14), transparent 65%);
+    animation: floodlight-pulse 7s ease-in-out infinite;
+}
+
+/* faint pitch markings: halfway line + center circle, drawn in SVG */
+.hero::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 54%;
+    width: 900px;
+    height: 900px;
+    z-index: -1;
+    transform: translate(-50%, -50%);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 900'%3E%3Cline x1='450' y1='0' x2='450' y2='900' stroke='%23238636' stroke-width='2'/%3E%3Ccircle cx='450' cy='450' r='140' stroke='%23238636' stroke-width='2' fill='none'/%3E%3Ccircle cx='450' cy='450' r='4' fill='%23238636'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-size: contain;
+    opacity: 0.08;
+    pointer-events: none;
+}
+
+@keyframes floodlight-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero::before { animation: none; }
 }
 
 .hero h1 {
@@ -69,6 +113,7 @@ nav {
     color: #ffffff;
     margin-bottom: 12px;
     letter-spacing: -1px;
+    text-shadow: 0 0 40px rgba(35, 134, 54, 0.25);
 }
 
 .hero h1 span {
@@ -463,6 +508,43 @@ footer a {
     font-weight: 600;
 }
 /* HOME CARDS */
+.explore-section {
+    position: relative;
+    padding-top: 10px;
+    padding-bottom: 20px;
+    background-image: repeating-linear-gradient(
+        115deg,
+        rgba(255, 255, 255, 0.012) 0px,
+        rgba(255, 255, 255, 0.012) 40px,
+        transparent 40px,
+        transparent 80px
+    );
+}
+
+.section-header {
+    text-align: center;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 40px 8px;
+}
+
+.section-eyebrow {
+    display: inline-block;
+    color: #2ea043;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.section-header h2 {
+    color: #ffffff;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+}
+
 .home-sections {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -473,21 +555,70 @@ footer a {
 }
 
 .home-card {
+    position: relative;
     background-color: #0d1117;
     border: 1px solid #21262d;
     border-radius: 12px;
     padding: 25px;
-    transition: border-color 0.2s, transform 0.1s;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+    animation: card-rise 0.5s ease backwards;
 }
 
+.home-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent, #238636);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s ease;
+}
+
+.home-card:hover::before {
+    transform: scaleX(1);
+}
+
+.home-card:nth-child(1) { animation-delay: 0.05s; }
+.home-card:nth-child(2) { animation-delay: 0.12s; }
+.home-card:nth-child(3) { animation-delay: 0.19s; }
+.home-card:nth-child(4) { animation-delay: 0.26s; }
+.home-card:nth-child(5) { animation-delay: 0.33s; }
+
+@keyframes card-rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-card { animation: none; }
+}
+
+.home-card-standings { --accent: #2ea043; }
+.home-card-results   { --accent: #58a6ff; }
+.home-card-fixtures  { --accent: #a371f7; }
+.home-card-scorers   { --accent: #e3b341; }
+.home-card-assisters { --accent: #f778ba; }
+
 .home-card:hover {
-    border-color: #238636;
+    border-color: var(--accent, #238636);
     transform: translateY(-3px);
+    box-shadow: 0 12px 30px -12px color-mix(in srgb, var(--accent, #238636) 55%, transparent);
 }
 
 .home-card-icon {
-    font-size: 32px;
-    margin-bottom: 12px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 14px;
+    border-radius: 10px;
+    background: radial-gradient(circle, color-mix(in srgb, var(--accent, #238636) 22%, transparent) 0%, transparent 75%);
 }
 
 .home-card h3 {
@@ -586,7 +717,7 @@ footer a {
 }
 
 .home-card-title:hover {
-    color: #238636;
+    color: var(--accent, #238636);
 }
 .stats-grid {
     display: grid;
@@ -720,6 +851,66 @@ footer a {
     color: #8b949e;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+/* TROPHY CABINET */
+.trophy-group {
+    margin-bottom: 22px;
+}
+
+.trophy-group:last-child {
+    margin-bottom: 0;
+}
+
+.trophy-group-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #8b949e;
+    margin-bottom: 10px;
+}
+
+.trophy-group-winner { color: #e3b341; }
+.trophy-group-2nd-place,
+.trophy-group-runner-up { color: #c9d1d9; }
+.trophy-group-3rd-place { color: #cd8b4d; }
+
+.trophy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.trophy-card {
+    background-color: #0d1117;
+    border: 1px solid #21262d;
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    transition: border-color 0.2s, transform 0.1s;
+}
+
+.trophy-card:hover {
+    border-color: #30363d;
+    transform: translateY(-2px);
+}
+
+.trophy-card.trophy-winner {
+    border-color: rgba(227, 179, 65, 0.35);
+    background: linear-gradient(135deg, #1c1a0d 0%, #0d1117 65%);
+}
+
+.trophy-card strong {
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.trophy-meta {
+    color: #8b949e;
+    font-size: 12px;
 }
 .search-tabs {
     display: flex;

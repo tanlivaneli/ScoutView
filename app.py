@@ -1,4 +1,5 @@
 import os
+from itertools import groupby
 from flask import Flask, render_template, request
 import requests
 from dotenv import load_dotenv
@@ -32,6 +33,14 @@ RAPID_LEAGUES = {
     61: "Ligue 1",
     2: "Champions League"
 }
+
+# Seasons in API-Sports are labeled by the year they start
+# (e.g. the 2025/26 season is "2025"). The free API-Sports plan
+# only has access to seasons 2022-2024, so this is capped at 2024
+# until the plan is upgraded — bumping it further will return
+# zero results with a "Free plans do not have access to this
+# season" error.
+CURRENT_SEASON = 2024
 
 
 def get_all_teams():
@@ -157,7 +166,7 @@ def player_search():
 
     players = []
     seen = set()
-    season = 2024
+    season = CURRENT_SEASON
 
     for league_id in RAPID_LEAGUES:
         url = f"{RAPID_HOST}/players?search={query}&league={league_id}&season={season}"
@@ -174,20 +183,44 @@ def player_search():
 
 @app.route("/player/<int:player_id>")
 def player_profile(player_id):
-    all_stats = []
-    season = 2024
-    for league_id, league_name in RAPID_LEAGUES.items():
-        url = f"{RAPID_HOST}/players?id={player_id}&league={league_id}&season={season}"
-        response = requests.get(url, headers=RAPID_HEADERS)
-        data = response.json()
-        if data.get("response"):
-            all_stats.append(data["response"][0])
+    season = CURRENT_SEASON
+    url = f"{RAPID_HOST}/players?id={player_id}&season={season}"
+    response = requests.get(url, headers=RAPID_HEADERS)
+    data = response.json()
 
-    if not all_stats:
+    if not data.get("response"):
         return render_template("home.html", leagues=LEAGUES)
 
-    player_data = all_stats[0]["player"]
-    return render_template("player_profile.html", player=player_data, stats=all_stats, leagues=LEAGUES)
+    entry = data["response"][0]
+    player_data = entry["player"]
+    # reshape into the per-competition list the template expects
+    all_stats = [{"statistics": [comp]} for comp in entry.get("statistics", [])]
+
+    trophies_url = f"{RAPID_HOST}/trophies?player={player_id}"
+    trophies_response = requests.get(trophies_url, headers=RAPID_HEADERS)
+    trophies = trophies_response.json().get("response", [])
+
+    # the API sometimes returns the exact same trophy more than once
+    seen = set()
+    unique_trophies = []
+    for t in trophies:
+        key = (t.get("place"), t.get("league"), t.get("country"), t.get("season"))
+        if key not in seen:
+            seen.add(key)
+            unique_trophies.append(t)
+
+    # most recent season first within each group; trophies with no
+    # season on record sink to the bottom of their group
+    unique_trophies.sort(key=lambda t: t.get("season") or "", reverse=True)
+
+    # group into Winner / 2nd Place / 3rd Place etc, winners shown first
+    place_rank = {"Winner": 0, "2nd Place": 1, "Runner-up": 1, "3rd Place": 2}
+    unique_trophies.sort(key=lambda t: place_rank.get(t.get("place", ""), 3))
+    grouped_trophies = [(place, list(items)) for place, items in
+                         groupby(unique_trophies, key=lambda t: t.get("place") or "Other")]
+
+    return render_template("player_profile.html", player=player_data, stats=all_stats,
+                           grouped_trophies=grouped_trophies, leagues=LEAGUES)
 
 
 if __name__ == "__main__":

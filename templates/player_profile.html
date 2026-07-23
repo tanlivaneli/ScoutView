@@ -81,5 +81,24 @@
         </div>
     </div>
     {% endfor %}
+
+    {% if grouped_trophies %}
+    <div class="section">
+        <h3>🏆 Trophy Cabinet</h3>
+        {% for place, items in grouped_trophies %}
+        <div class="trophy-group">
+            <h4 class="trophy-group-title trophy-group-{{ place|replace(' ', '-')|lower }}">{{ place }} · {{ items|length }}</h4>
+            <div class="trophy-grid">
+                {% for t in items %}
+                <div class="trophy-card {% if place == 'Winner' %}trophy-winner{% endif %}">
+                    <strong>{{ t.league }}</strong>
+                    <span class="trophy-meta">{{ t.country }}{% if t.season %} · {{ t.season }}{% endif %}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
