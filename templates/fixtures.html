@@ -26,19 +26,19 @@
                         <img src="{{ match.homeTeam.crest }}" alt="" width="22">
                         {{ match.homeTeam.name }}
                     </a>
-                    <span class="score" style="font-size:14px; color:#8b949e; font-weight:600; background:none;">vs</span>
+                    <span class="score" style="font-size:14px; color:var(--text-secondary); font-weight:600; background:none;">vs</span>
                     <a href="/team/{{ match.awayTeam.id }}" class="team team-link away">
                         <img src="{{ match.awayTeam.crest }}" alt="" width="22">
                         {{ match.awayTeam.name }}
                     </a>
                 </div>
                 <div class="match-status">
-                    <span style="color:#8b949e; font-size:12px;">MD {{ match.matchday }}</span>
+                    <span style="color:var(--text-secondary); font-size:12px;">MD {{ match.matchday }}</span>
                 </div>
             </div>
             {% endfor %}
         {% else %}
-            <p style="color: #8b949e; text-align: center; padding: 40px;">No upcoming fixtures available for this league.</p>
+            <p style="color: var(--text-secondary); text-align: center; padding: 40px;">No upcoming fixtures available for this league.</p>
         {% endif %}
     </div>
 </div>

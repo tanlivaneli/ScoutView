@@ -23,7 +23,13 @@
         {% endfor %}
     </div>
     {% else %}
-    <p style="color: #8b949e; padding: 40px 0; text-align: center;">No players found for "{{ query }}"</p>
+    {% if api_limited %}
+    <p style="color: #e3b341; padding: 40px 0; text-align: center;">
+        {{ limit_message }}
+    </p>
+    {% else %}
+    <p style="color: var(--text-secondary); padding: 40px 0; text-align: center;">No players found for "{{ query }}"</p>
+    {% endif %}
     {% endif %}
 </div>
 {% endblock %}

@@ -30,10 +30,12 @@
                 {% for item in assisters %}
                 <tr>
                     <td>{{ loop.index }}</td>
-                    <td>{{ item.player.name }}</td>
+                    <td><a href="/player-search?q={{ item.player.name|urlencode }}&team={{ item.team.name|urlencode }}" class="player-name-link">{{ item.player.name }}</a></td>
                     <td>
-                        <img src="{{ item.team.crest }}" alt="" width="20">
-                        {{ item.team.name }}
+                        <a href="/team/{{ item.team.id }}" class="team-link">
+                            <img src="{{ item.team.crest }}" alt="" width="20">
+                            {{ item.team.name }}
+                        </a>
                     </td>
                     <td>{{ item.player.nationality }}</td>
                     <td><strong>{{ item.assists }}</strong></td>
@@ -43,7 +45,7 @@
                 {% endfor %}
             {% else %}
                 <tr>
-                    <td colspan="7" style="text-align: center; color: #8b949e; padding: 40px;">
+                    <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 40px;">
                         No assister data available for this league yet.
                     </td>
                 </tr>

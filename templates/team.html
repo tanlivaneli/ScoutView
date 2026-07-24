@@ -20,10 +20,25 @@
                 {% endif %}
             </div>
             {% if team.colors %}
-            <p style="color:#8b949e; font-size:13px; margin-top:8px;">Club colours: {{ team.colors }}</p>
+            <p style="color:var(--text-secondary); font-size:13px; margin-top:8px;">Club colours: {{ team.colors }}</p>
             {% endif %}
         </div>
     </div>
+
+    <!-- TROPHY CABINET -->
+    {% if team_honours %}
+    <div class="section">
+        <h3>🏆 Trophy Cabinet</h3>
+        <div class="stats-cards">
+            {% for h in team_honours %}
+            <div class="stat-box">
+                <span class="stat-number" style="color:#e3b341;">{{ h.count }}</span>
+                <span class="stat-label">{{ h.name }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
     <!-- NEXT MATCH -->
     {% if next_match %}
@@ -41,7 +56,7 @@
                     {% endif %}
                     {{ next_match.homeTeam.name }}
                 </span>
-                <span class="score" style="font-size:14px; color:#8b949e; font-weight:600;">vs</span>
+                <span class="score" style="font-size:14px; color:var(--text-secondary); font-weight:600;">vs</span>
                 <span class="team away">
                     {% if next_match.awayTeam.crest %}
                     <img src="{{ next_match.awayTeam.crest }}" alt="" width="22">
@@ -50,7 +65,7 @@
                 </span>
             </div>
             <div class="match-status">
-                <span style="color:#8b949e; font-size:12px;">{{ next_match.competition.name }}</span>
+                <span style="color:var(--text-secondary); font-size:12px;">{{ next_match.competition.name }}</span>
             </div>
         </div>
     </div>
@@ -65,7 +80,7 @@
             <div class="match-card">
                 <div class="match-date">
                     {{ match.utcDate[:10] }}<br>
-                    <span style="font-size:11px; color:#8b949e;">{{ match.competition.name }}</span>
+                    <span style="font-size:11px; color:var(--text-secondary);">{{ match.competition.name }}</span>
                 </div>
                 <div class="match-teams">
                     <span class="team home">
@@ -78,7 +93,7 @@
                         {% set h = match.score.fullTime.home %}
                         {% set a = match.score.fullTime.away %}
                         <span class="{% if h > a %}score-home-win{% elif h < a %}score-home-loss{% else %}score-draw{% endif %}">{{ h }}</span>
-                        <span style="color:#8b949e; font-size:14px; font-weight:400;"> - </span>
+                        <span style="color:var(--text-secondary); font-size:14px; font-weight:400;"> - </span>
                         <span class="{% if a > h %}score-away-win{% elif a < h %}score-away-loss{% else %}score-draw{% endif %}">{{ a }}</span>
                     </span>
                     <span class="team away">
@@ -92,7 +107,7 @@
             {% endfor %}
         </div>
         {% else %}
-        <p style="color: #8b949e; padding: 20px 0;">No recent results available — season may not have started yet.</p>
+        <p style="color: var(--text-secondary); padding: 20px 0;">No recent results available — season may not have started yet.</p>
         {% endif %}
     </div>
 
@@ -103,8 +118,9 @@
         <div class="squad-grid">
             {% for player in team.squad %}
             <div class="player-card">
-                <strong>{{ player.name }}</strong>
-                <span class="player-position">{{ player.position or 'N/A' }}</span>
+                <div class="player-card-avatar">👤</div>
+                <a href="/player-search?q={{ player.name|urlencode }}&team={{ team.name|urlencode }}" class="player-name-link">{{ player.name }}</a>
+                <span class="player-position">{{ (player.position or 'N/A')|replace('Offence', 'Forward') }}</span>
                 <span>🌍 {{ player.nationality }}</span>
             </div>
             {% endfor %}
@@ -113,7 +129,7 @@
     {% else %}
     <div class="section">
         <h3>Squad</h3>
-        <p style="color: #8b949e; padding: 20px 0;">Squad information not available.</p>
+        <p style="color: var(--text-secondary); padding: 20px 0;">Squad information not available.</p>
     </div>
     {% endif %}
 

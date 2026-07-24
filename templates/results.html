@@ -30,7 +30,7 @@
                         {% set h = match.score.fullTime.home %}
                         {% set a = match.score.fullTime.away %}
                         <span class="{% if h > a %}score-home-win{% elif h < a %}score-home-loss{% else %}score-draw{% endif %}">{{ h }}</span>
-                        <span style="color:#8b949e; font-size:14px; font-weight:400;"> - </span>
+                        <span style="color:var(--text-secondary); font-size:14px; font-weight:400;"> - </span>
                         <span class="{% if a > h %}score-away-win{% elif a < h %}score-away-loss{% else %}score-draw{% endif %}">{{ a }}</span>
                     </span>
                     <a href="/team/{{ match.awayTeam.id }}" class="team team-link away">
@@ -52,7 +52,7 @@
             </div>
             {% endfor %}
         {% else %}
-            <p style="color: #8b949e; text-align: center; padding: 40px;">No results available for this league yet.</p>
+            <p style="color: var(--text-secondary); text-align: center; padding: 40px;">No results available for this league yet.</p>
         {% endif %}
     </div>
 </div>

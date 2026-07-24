@@ -5,6 +5,12 @@
     <h1>Scout<span>View</span></h1>
     <p>Live football statistics across Europe's top leagues</p>
 
+    {% if api_message %}
+    <p style="color: #e3b341; background: rgba(227,179,65,0.08); border: 1px solid rgba(227,179,65,0.3); border-radius: 8px; padding: 10px 16px; display: inline-block; margin-bottom: 15px; font-size: 14px;">
+        {{ api_message }}
+    </p>
+    {% endif %}
+
     <div class="search-tabs">
         <button class="search-tab active" onclick="showSearch('team')">🏟️ Search Teams</button>
         <button class="search-tab" onclick="showSearch('player')">👤 Search Players</button>
@@ -37,7 +43,7 @@
             {% endfor %}
         </div>
     {% elif query is defined and query and (teams is not defined or not teams) %}
-        <p style="color: #8b949e; margin-top: 20px;">No teams found for "{{ query }}"</p>
+        <p style="color: var(--text-secondary); margin-top: 20px;">No teams found for "{{ query }}"</p>
     {% endif %}
 </div>
 

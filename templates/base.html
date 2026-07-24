@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ScoutView — Live Football Stats</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        // Runs before the page paints, so there's no flash of the wrong
+        // theme while the rest of the page loads.
+        (function () {
+            if (localStorage.getItem('scoutview-theme') === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
 </head>
 <body>
     <nav>
@@ -15,6 +24,9 @@
             <a href="/fixtures" class="nav-link">📅 Fixtures</a>
             <a href="/scorers" class="nav-link">🥇 Top Scorers</a>
             <a href="/assisters" class="nav-link">🎯 Top Assisters</a>
+        </div>
+        <div class="nav-right">
+            <button id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Switch to light mode">🌙</button>
         </div>
     </nav>
 
