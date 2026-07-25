@@ -2,7 +2,7 @@
 
 Live football statistics across Europe's top leagues — built with Python, Flask, and two public football data APIs.
 
-**[Live Demo](#)** *(add your Render URL here once deployed)*
+**[Live Demo](https://scoutview.onrender.com)**
 
 ---
 
@@ -61,6 +61,15 @@ This project runs entirely on free-tier API plans, which come with a couple of r
 - **Player season data is capped at 2024** — API-Sports' free plan only includes seasons 2022–2024, so player stats and search reflect that season rather than the current one. Team standings/results/fixtures are unaffected, since those come from football-data.org and are always current.
 - **API-Sports allows 100 requests/day** on the free tier, shared across all visitors. The app caches responses to minimize this, and shows a clear message if the daily quota is reached rather than failing silently.
 - **Club trophy data is hand-curated**, not live — neither API offers a club honours endpoint, so major honours for ~65 clubs are manually researched and will need periodic updates as seasons conclude. Player trophies, by contrast, are pulled live.
+
+## Roadmap
+
+This is an active side project, not a finished product — a few things planned for the future:
+
+- Expand club trophy coverage beyond the current ~65 major clubs
+- Upgrade to a paid API tier for current-season player stats (currently capped at 2022–2024)
+- Add match-level statistics (possession, shots, cards) if a suitable data source is found
+- General UI polish and performance improvements as I keep learning
 
 ## Credits
 
