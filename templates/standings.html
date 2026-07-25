@@ -13,6 +13,10 @@
         {% endfor %}
     </div>
 
+    {% if selected == "CL" %}
+    <a href="/knockouts" class="league-btn" style="margin-bottom: 20px; display: inline-block;">🏆 View Knockout Bracket</a>
+    {% endif %}
+
     <table class="standings-table">
         <thead>
             <tr>

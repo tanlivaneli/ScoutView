@@ -464,6 +464,36 @@ TEAM_HONOURS = {
 }
 
 
+TEAM_NAME_STOPWORDS = {
+    "fc", "cf", "afc", "ac", "sc", "ssc", "ud", "cd", "rcd", "ca", "cfc",
+    "calcio", "club", "de", "the", "kv", "sv", "fk", "sk", "und", "1913",
+    "1909", "1907", "1899", "1904", "04",
+}
+
+
+def significant_words(name):
+    """Break a club name down to its meaningful words: strip accents,
+    treat hyphens/periods as spaces, and drop common filler words/suffixes
+    (FC, CF, 'de', founding-year numbers, etc.) that the two APIs don't
+    always agree on including."""
+    stripped = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode().lower()
+    stripped = stripped.replace("-", " ").replace(".", " ")
+    return {w for w in stripped.split() if w not in TEAM_NAME_STOPWORDS}
+
+
+def teams_match(name_a, name_b):
+    """True if two club names likely refer to the same club, even when
+    phrased differently between football-data.org and API-Sports (e.g.
+    'Atletico Madrid' vs 'Club Atlético de Madrid', or 'Paris Saint-Germain
+    FC' vs 'Paris Saint Germain'). Matches if the smaller set of
+    significant words is fully contained in the larger one."""
+    words_a, words_b = significant_words(name_a), significant_words(name_b)
+    if not words_a or not words_b:
+        return False
+    smaller, larger = (words_a, words_b) if len(words_a) <= len(words_b) else (words_b, words_a)
+    return smaller.issubset(larger)
+
+
 def get_team_honours(team_name):
     """Fuzzy-match a football-data.org team name (e.g. 'Real Madrid CF')
     against our honours dataset keys (e.g. 'real madrid'). Accent-insensitive
@@ -511,6 +541,91 @@ def standings():
     league_name = LEAGUES.get(league_code, "Unknown League")
     return render_template("standings.html", table=table, leagues=LEAGUES, selected=league_code,
                            league_name=league_name)
+
+
+# Ordered hints for sorting knockout stages left-to-right. The Champions
+# League switched formats in 2024/25 (league phase instead of groups, plus
+# a knockout play-off round before the Round of 16), so rather than
+# hardcoding exact stage names we sort by whichever of these keywords
+# appears in the stage — this keeps working even if the exact stage name
+# football-data.org uses for the play-off round differs from what's here.
+KNOCKOUT_STAGE_ORDER_HINTS = ["PLAYOFF", "PLAY_OFF", "16", "QUARTER", "SEMI", "FINAL"]
+
+
+def stage_sort_key(stage):
+    stage_upper = stage.upper()
+    for i, hint in enumerate(KNOCKOUT_STAGE_ORDER_HINTS):
+        if hint in stage_upper:
+            return i
+    return len(KNOCKOUT_STAGE_ORDER_HINTS)
+
+
+def stage_display_name(stage):
+    return stage.replace("_", " ").title()
+
+
+@app.route("/knockouts")
+def knockouts():
+    url = f"{BASE_URL}/competitions/CL/matches"
+    data = cached_get(url, HEADERS, ttl_seconds=3600)
+    all_matches = data.get("matches", [])
+
+    # keep only knockout-stage matches — exclude the league/group phase,
+    # which is already shown on the Standings page as a table
+    knockout_matches = [
+        m for m in all_matches
+        if m.get("stage") and "GROUP" not in m["stage"].upper() and "LEAGUE" not in m["stage"].upper()
+    ]
+
+    stages = {}
+    for m in knockout_matches:
+        stages.setdefault(m["stage"], []).append(m)
+
+    bracket = []
+    for stage in sorted(stages.keys(), key=stage_sort_key):
+        stage_matches = stages[stage]
+
+        # pair up two-legged ties by the (unordered) set of the two teams
+        ties = {}
+        for m in stage_matches:
+            key = tuple(sorted([m["homeTeam"]["id"], m["awayTeam"]["id"]]))
+            ties.setdefault(key, []).append(m)
+
+        tie_list = []
+        for leg_matches in ties.values():
+            leg_matches.sort(key=lambda x: x["utcDate"])
+            team1 = leg_matches[0]["homeTeam"]
+            team2 = leg_matches[0]["awayTeam"]
+
+            legs = []
+            agg1, agg2 = 0, 0
+            any_finished = False
+            for leg in leg_matches:
+                h_score = leg["score"]["fullTime"]["home"]
+                a_score = leg["score"]["fullTime"]["away"]
+                if h_score is not None and a_score is not None:
+                    any_finished = True
+                    if leg["homeTeam"]["id"] == team1["id"]:
+                        agg1 += h_score
+                        agg2 += a_score
+                    else:
+                        agg1 += a_score
+                        agg2 += h_score
+                legs.append({"home_score": h_score, "away_score": a_score,
+                            "home_is_team1": leg["homeTeam"]["id"] == team1["id"]})
+
+            tie_list.append({
+                "team1": team1,
+                "team2": team2,
+                "legs": legs,
+                "agg1": agg1 if any_finished else None,
+                "agg2": agg2 if any_finished else None,
+                "two_legged": len(leg_matches) > 1,
+            })
+
+        bracket.append({"display_name": stage_display_name(stage), "ties": tie_list})
+
+    return render_template("knockouts.html", bracket=bracket)
 
 
 @app.route("/results")
@@ -662,11 +777,30 @@ def player_search():
 
     players = list(best_by_player.values())
 
-    # prefer an exact (accent/case-insensitive) full-name match for the
-    # auto-redirect. A surname search for "Kane" can turn up more than one
-    # real player named Kane — filtering to whoever's full name exactly
-    # matches what was searched (e.g. "Harry Kane") resolves that even
-    # when the surname alone was ambiguous.
+    def team_name_of(p):
+        stats = p.get("statistics") or [{}]
+        return (stats[0].get("team") or {}).get("name") or ""
+
+    # Check the team hint FIRST, against every candidate — not just ones
+    # whose full name matches exactly. This matters because API-Sports
+    # stores names abbreviated ("H. Kane"), while football-data.org (what
+    # Top Scorers/Assisters/Squad pages use) gives full names ("Harry
+    # Kane") — those will basically never match each other exactly. The
+    # team we already knew the player by, from wherever the link was
+    # clicked, is the more reliable signal.
+    if team_hint:
+        team_matches = [p for p in players if team_name_of(p) and teams_match(team_hint, team_name_of(p))]
+        if len(team_matches) == 1:
+            return redirect(url_for("player_profile", player_id=team_matches[0]["player"]["id"]))
+        if len(team_matches) > 1:
+            # more than one candidate at that same club (rare, but possible
+            # for a very common name) — narrow the list shown to just those,
+            # rather than showing every unrelated same-surname player too
+            players = team_matches
+
+    # no usable team hint (e.g. a manual homepage search), or the hint
+    # didn't narrow it down — fall back to an exact full-name match,
+    # which still works for players whose API-Sports name isn't abbreviated
     exact_matches = [
         p for p in players
         if unicodedata.normalize("NFKD", p["player"]["name"]).encode("ascii", "ignore").decode().lower()
@@ -674,22 +808,6 @@ def player_search():
     ]
     if len(exact_matches) == 1:
         return redirect(url_for("player_profile", player_id=exact_matches[0]["player"]["id"]))
-
-    # if even the exact name still matches more than one real player (e.g.
-    # two different people both named "Vitinha"), use the team we already
-    # knew them by — from wherever the link was clicked, like Top Scorers —
-    # to pick the right one instead of showing a pick-one list
-    if len(exact_matches) > 1 and team_hint:
-        normalized_hint = unicodedata.normalize("NFKD", team_hint).encode("ascii", "ignore").decode().lower()
-        team_matches = [
-            p for p in exact_matches
-            if (p.get("statistics") or [{}])[0].get("team", {}).get("name")
-            and normalized_hint in unicodedata.normalize(
-                "NFKD", p["statistics"][0]["team"]["name"]
-            ).encode("ascii", "ignore").decode().lower()
-        ]
-        if len(team_matches) == 1:
-            return redirect(url_for("player_profile", player_id=team_matches[0]["player"]["id"]))
 
     # otherwise, if the search resolved to exactly one player overall,
     # skip the results list and go straight to their profile

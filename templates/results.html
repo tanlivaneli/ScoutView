@@ -38,17 +38,6 @@
                         {{ match.awayTeam.name }}
                     </a>
                 </div>
-                <div class="match-status">
-                    {% set h = match.score.fullTime.home %}
-                    {% set a = match.score.fullTime.away %}
-                    {% if h > a %}
-                        <span class="badge badge-w">H</span>
-                    {% elif a > h %}
-                        <span class="badge badge-l">A</span>
-                    {% else %}
-                        <span class="badge badge-d">D</span>
-                    {% endif %}
-                </div>
             </div>
             {% endfor %}
         {% else %}

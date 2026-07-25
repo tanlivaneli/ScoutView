@@ -565,18 +565,80 @@ nav {
     font-weight: 600;
 }
 
-/* WIN/DRAW/LOSS BADGES */
-.badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 700;
+/* KNOCKOUT BRACKET */
+.bracket-round {
+    margin-bottom: 32px;
 }
 
-.badge-w { background-color: #238636; color: #fff; }
-.badge-d { background-color: #9e6a03; color: #fff; }
-.badge-l { background-color: #da3633; color: #fff; }
+.bracket-round-title {
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.bracket-round-ties {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+.tie-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    box-shadow: var(--card-shadow);
+}
+
+.tie-team {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 6px;
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    transition: background-color 0.15s;
+}
+
+.tie-team:hover {
+    background-color: var(--bg-hover);
+}
+
+.tie-team span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tie-team strong {
+    font-size: 14px;
+}
+
+.tie-team-winner {
+    color: var(--text-primary);
+}
+
+.tie-team-winner strong {
+    color: #238636;
+}
+
+.tie-legs {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding-top: 6px;
+    margin-top: 4px;
+    border-top: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 11px;
+}
 
 /* FOOTER */
 footer {

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Champions League Knockout Bracket</h2>
+
+    {% if bracket %}
+    {% for round in bracket %}
+    <div class="bracket-round">
+        <h3 class="bracket-round-title">{{ round.display_name }}</h3>
+        <div class="bracket-round-ties">
+            {% for tie in round.ties %}
+            <div class="tie-card">
+                <a href="/team/{{ tie.team1.id }}" class="tie-team {% if tie.agg1 is not none and tie.agg1 > tie.agg2 %}tie-team-winner{% endif %}">
+                    {% if tie.team1.crest %}<img src="{{ tie.team1.crest }}" alt="" width="20">{% endif %}
+                    <span>{{ tie.team1.name }}</span>
+                    <strong>{{ tie.agg1 if tie.agg1 is not none else '-' }}</strong>
+                </a>
+                <a href="/team/{{ tie.team2.id }}" class="tie-team {% if tie.agg2 is not none and tie.agg2 > tie.agg1 %}tie-team-winner{% endif %}">
+                    {% if tie.team2.crest %}<img src="{{ tie.team2.crest }}" alt="" width="20">{% endif %}
+                    <span>{{ tie.team2.name }}</span>
+                    <strong>{{ tie.agg2 if tie.agg2 is not none else '-' }}</strong>
+                </a>
+                {% if tie.two_legged %}
+                <div class="tie-legs">
+                    {% for leg in tie.legs %}
+                    <span>
+                        {% if leg.home_is_team1 %}{{ leg.home_score if leg.home_score is not none else '-' }}–{{ leg.away_score if leg.away_score is not none else '-' }}
+                        {% else %}{{ leg.away_score if leg.away_score is not none else '-' }}–{{ leg.home_score if leg.home_score is not none else '-' }}
+                        {% endif %}
+                    </span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="color: var(--text-secondary); padding: 40px 0; text-align: center;">
+        The knockout bracket isn't available yet — it'll fill in once this season's Champions League reaches its knockout stage.
+    </p>
+    {% endif %}
+</div>
+{% endblock %}
