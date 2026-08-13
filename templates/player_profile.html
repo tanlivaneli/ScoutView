@@ -22,23 +22,18 @@
         </div>
     </div>
 
-    {% if player.currentTeam %}
+    {% if club_team %}
     <div class="section">
         <h3>Current Club</h3>
         <div class="match-card">
             <div class="match-teams">
-                <a href="/team/{{ player.currentTeam.id }}" class="team team-link home">
-                    {% if player.currentTeam.crest %}
-                    <img src="{{ player.currentTeam.crest }}" alt="" width="22">
+                <a href="/team/{{ club_team.id }}" class="team team-link home">
+                    {% if club_team.crest %}
+                    <img src="{{ club_team.crest }}" alt="" width="22">
                     {% endif %}
-                    {{ player.currentTeam.name }}
+                    {{ club_team.name }}
                 </a>
             </div>
-            {% if player.currentTeam.contract and player.currentTeam.contract.until %}
-            <div class="match-status">
-                <span style="color:var(--text-secondary); font-size:12px;">Contract until {{ player.currentTeam.contract.until }}</span>
-            </div>
-            {% endif %}
         </div>
     </div>
     {% endif %}

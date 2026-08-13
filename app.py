@@ -730,6 +730,19 @@ def player_search():
     return render_template("player_search.html", players=matches, query=query, leagues=LEAGUES)
 
 
+def find_club_team(player_id):
+    """The persons/{id} endpoint's currentTeam can be a national team if
+    the player was recently on international duty (football-data.org
+    returns whichever squad they were most recently active with), so
+    resolve their actual club from the same 6-league squad data
+    player_search matches against instead of trusting it blindly."""
+    for t in get_all_teams():
+        for p in t.get("squad", []):
+            if p["id"] == player_id:
+                return t
+    return None
+
+
 def get_player_season_stats(player_id, current_team):
     """football-data.org's free tier has no per-player season-stats
     endpoint — the closest it offers is the top-scorers leaderboard per
@@ -771,9 +784,10 @@ def player_profile(player_id):
         today = date.today()
         age = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
 
-    season_stats = get_player_season_stats(player_id, data.get("currentTeam"))
+    club_team = find_club_team(player_id)
+    season_stats = get_player_season_stats(player_id, club_team)
 
-    return render_template("player_profile.html", player=data, age=age,
+    return render_template("player_profile.html", player=data, age=age, club_team=club_team,
                            season_stats=season_stats, leagues=LEAGUES)
 
 
