@@ -1,7 +1,7 @@
 import os
 import time
 import unicodedata
-from itertools import groupby
+from datetime import date
 from flask import Flask, render_template, request, redirect, url_for
 import requests
 from dotenv import load_dotenv
@@ -14,10 +14,6 @@ API_KEY = os.environ["FOOTBALL_DATA_API_KEY"]
 BASE_URL = "https://api.football-data.org/v4"
 HEADERS = {"X-Auth-Token": API_KEY}
 
-RAPID_KEY = os.environ["API_SPORTS_KEY"]
-RAPID_HOST = "https://v3.football.api-sports.io"
-RAPID_HEADERS = {"x-apisports-key": RAPID_KEY}
-
 LEAGUES = {
     "PL": "Premier League",
     "BL1": "Bundesliga",
@@ -26,23 +22,6 @@ LEAGUES = {
     "FL1": "Ligue 1",
     "CL": "Champions League"
 }
-
-RAPID_LEAGUES = {
-    39: "Premier League",
-    78: "Bundesliga",
-    140: "La Liga",
-    135: "Serie A",
-    61: "Ligue 1",
-    2: "Champions League"
-}
-
-# Seasons in API-Sports are labeled by the year they start
-# (e.g. the 2025/26 season is "2025"). The free API-Sports plan
-# only has access to seasons 2022-2024, so this is capped at 2024
-# until the plan is upgraded — bumping it further will return
-# zero results with a "Free plans do not have access to this
-# season" error.
-CURRENT_SEASON = 2024
 
 # Simple in-memory cache so repeat page loads (e.g. two people checking the
 # same standings, or one person clicking back and forth) don't re-hit the
@@ -471,22 +450,25 @@ TEAM_NAME_STOPWORDS = {
 }
 
 
+def strip_accents(text):
+    return unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode()
+
+
 def significant_words(name):
     """Break a club name down to its meaningful words: strip accents,
     treat hyphens/periods as spaces, and drop common filler words/suffixes
-    (FC, CF, 'de', founding-year numbers, etc.) that the two APIs don't
-    always agree on including."""
-    stripped = unicodedata.normalize("NFKD", name or "").encode("ascii", "ignore").decode().lower()
-    stripped = stripped.replace("-", " ").replace(".", " ")
+    (FC, CF, 'de', founding-year numbers, etc.) that don't reliably tell
+    two differently-phrased versions of the same club name apart."""
+    stripped = strip_accents(name).lower().replace("-", " ").replace(".", " ")
     return {w for w in stripped.split() if w not in TEAM_NAME_STOPWORDS}
 
 
 def teams_match(name_a, name_b):
     """True if two club names likely refer to the same club, even when
-    phrased differently between football-data.org and API-Sports (e.g.
-    'Atletico Madrid' vs 'Club Atlético de Madrid', or 'Paris Saint-Germain
-    FC' vs 'Paris Saint Germain'). Matches if the smaller set of
-    significant words is fully contained in the larger one."""
+    phrased differently (e.g. 'Atletico Madrid' vs 'Club Atlético de
+    Madrid', or 'Paris Saint-Germain FC' vs 'Paris Saint Germain').
+    Matches if the smaller set of significant words is fully contained
+    in the larger one."""
     words_a, words_b = significant_words(name_a), significant_words(name_b)
     if not words_a or not words_b:
         return False
@@ -504,8 +486,7 @@ def get_team_honours(team_name):
     the name, while a shared city name tends to trail as a suffix."""
     if not team_name:
         return None
-    stripped = unicodedata.normalize("NFKD", team_name).encode("ascii", "ignore").decode()
-    normalized = stripped.lower()
+    normalized = strip_accents(team_name).lower()
 
     best_key, best_position = None, None
     for key, honours in TEAM_HONOURS.items():
@@ -722,150 +703,78 @@ def player_search():
     if not query:
         return render_template("home.html", leagues=LEAGUES)
 
-    # strip accents (API-Sports search doesn't reliably match accented
-    # characters, e.g. "Mbappé" vs "Mbappe")
-    ascii_query = unicodedata.normalize("NFKD", query).encode("ascii", "ignore").decode()
-    normalized_query = ascii_query.lower()
+    normalized_query = strip_accents(query).lower()
+    all_teams = get_all_teams()
 
-    # search by surname alone first — API-Sports seems to match this more
-    # reliably than a full "first last" search — and only fall back to
-    # the full name if that comes up completely empty
-    surname = ascii_query.split()[-1] if " " in ascii_query else ascii_query
-    search_terms = [surname]
-    if surname != ascii_query:
-        search_terms.append(ascii_query)
+    seen = set()
+    matches = []
+    for t in all_teams:
+        for p in t.get("squad", []):
+            if p["id"] in seen:
+                continue
+            if normalized_query in strip_accents(p["name"]).lower():
+                seen.add(p["id"])
+                matches.append({"player": p, "team": t})
 
-    best_by_player = {}
-    season = CURRENT_SEASON
-    api_limited = False
-    limit_message = ""
-
-    for term in search_terms:
-        if best_by_player or api_limited:
-            break  # already found someone, or already hit a quota — stop calling the API
-        for league_id in RAPID_LEAGUES:
-            if api_limited:
-                break
-            url = f"{RAPID_HOST}/players?search={term}&league={league_id}&season={season}"
-            data = cached_get(url, RAPID_HEADERS, ttl_seconds=600)
-            errors = data.get("errors")
-            if isinstance(errors, dict):
-                if errors.get("rateLimit"):
-                    api_limited = True
-                    limit_message = "The player data API is temporarily rate-limited — wait a few seconds and try again."
-                    continue
-                if errors.get("requests"):
-                    api_limited = True
-                    limit_message = "The player data API's free daily request quota has been used up for today — try again after it resets (usually around midnight UTC)."
-                    continue
-            for item in data.get("response", []):
-                pid = item["player"]["id"]
-                stats = item.get("statistics") or [{}]
-                appearances = (stats[0].get("games") or {}).get("appearences") or 0
-
-                existing = best_by_player.get(pid)
-                existing_appearances = 0
-                if existing:
-                    existing_stats = existing.get("statistics") or [{}]
-                    existing_appearances = (existing_stats[0].get("games") or {}).get("appearences") or 0
-
-                # keep whichever league shows more actual game time — a stale,
-                # zero-appearance record from a former club shouldn't win over
-                # the club a player has actually featured for this season
-                if existing is None or appearances > existing_appearances:
-                    best_by_player[pid] = item
-
-    players = list(best_by_player.values())
-
-    def team_name_of(p):
-        stats = p.get("statistics") or [{}]
-        return (stats[0].get("team") or {}).get("name") or ""
-
-    # Check the team hint FIRST, against every candidate — not just ones
-    # whose full name matches exactly. This matters because API-Sports
-    # stores names abbreviated ("H. Kane"), while football-data.org (what
-    # Top Scorers/Assisters/Squad pages use) gives full names ("Harry
-    # Kane") — those will basically never match each other exactly. The
-    # team we already knew the player by, from wherever the link was
-    # clicked, is the more reliable signal.
+    # if we know which club the link was clicked from, prefer that
+    # candidate — narrows down same-name collisions (rare, but possible
+    # for a common surname search)
     if team_hint:
-        team_matches = [p for p in players if team_name_of(p) and teams_match(team_hint, team_name_of(p))]
-        if len(team_matches) == 1:
-            return redirect(url_for("player_profile", player_id=team_matches[0]["player"]["id"]))
-        if len(team_matches) > 1:
-            # more than one candidate at that same club (rare, but possible
-            # for a very common name) — narrow the list shown to just those,
-            # rather than showing every unrelated same-surname player too
-            players = team_matches
+        team_matches = [m for m in matches if teams_match(team_hint, m["team"]["name"])]
+        if team_matches:
+            matches = team_matches
 
-    # no usable team hint (e.g. a manual homepage search), or the hint
-    # didn't narrow it down — fall back to an exact full-name match,
-    # which still works for players whose API-Sports name isn't abbreviated
-    exact_matches = [
-        p for p in players
-        if unicodedata.normalize("NFKD", p["player"]["name"]).encode("ascii", "ignore").decode().lower()
-        == normalized_query
-    ]
-    if len(exact_matches) == 1:
-        return redirect(url_for("player_profile", player_id=exact_matches[0]["player"]["id"]))
+    if len(matches) == 1:
+        return redirect(url_for("player_profile", player_id=matches[0]["player"]["id"]))
 
-    # otherwise, if the search resolved to exactly one player overall,
-    # skip the results list and go straight to their profile
-    if len(players) == 1:
-        return redirect(url_for("player_profile", player_id=players[0]["player"]["id"]))
+    return render_template("player_search.html", players=matches, query=query, leagues=LEAGUES)
 
-    return render_template("player_search.html", players=players, query=query, leagues=LEAGUES,
-                           api_limited=api_limited, limit_message=limit_message)
+
+def get_player_season_stats(player_id, current_team):
+    """football-data.org's free tier has no per-player season-stats
+    endpoint — the closest it offers is the top-scorers leaderboard per
+    competition. Cross-reference that against whichever of our 6 leagues
+    the player's current club competes in, so goals/assists are shown
+    for players who rank high enough to appear on it."""
+    if not current_team:
+        return None
+    for comp in current_team.get("runningCompetitions", []):
+        code = comp.get("code")
+        if code not in LEAGUES:
+            continue
+        url = f"{BASE_URL}/competitions/{code}/scorers?limit=100"
+        data = cached_get(url, HEADERS)
+        for item in data.get("scorers", []):
+            if item.get("player", {}).get("id") == player_id:
+                return {
+                    "competition": LEAGUES[code],
+                    "goals": item.get("goals") or 0,
+                    "assists": item.get("assists") or 0,
+                    "penalties": item.get("penalties") or 0,
+                    "played_matches": item.get("playedMatches") or 0,
+                }
+    return None
 
 
 @app.route("/player/<int:player_id>")
 def player_profile(player_id):
-    season = CURRENT_SEASON
-    url = f"{RAPID_HOST}/players?id={player_id}&season={season}"
-    data = cached_get(url, RAPID_HEADERS, ttl_seconds=600)
+    url = f"{BASE_URL}/persons/{player_id}"
+    data = cached_get(url, HEADERS, ttl_seconds=3600)
 
-    errors = data.get("errors")
-    if isinstance(errors, dict):
-        if errors.get("rateLimit"):
-            return render_template("home.html", leagues=LEAGUES,
-                                   api_message="The player data API is temporarily rate-limited — wait a few seconds and try again.")
-        if errors.get("requests"):
-            return render_template("home.html", leagues=LEAGUES,
-                                   api_message="The player data API's free daily request quota has been used up for today — try again after it resets (usually around midnight UTC).")
-
-    if not data.get("response"):
+    if not data.get("id"):
         return render_template("home.html", leagues=LEAGUES)
 
-    entry = data["response"][0]
-    player_data = entry["player"]
-    # reshape into the per-competition list the template expects
-    all_stats = [{"statistics": [comp]} for comp in entry.get("statistics", [])]
+    age = None
+    dob = data.get("dateOfBirth")
+    if dob:
+        birth = date.fromisoformat(dob[:10])
+        today = date.today()
+        age = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
 
-    trophies_url = f"{RAPID_HOST}/trophies?player={player_id}"
-    trophies_data = cached_get(trophies_url, RAPID_HEADERS, ttl_seconds=3600)  # trophies change rarely
-    trophies = trophies_data.get("response", [])
+    season_stats = get_player_season_stats(player_id, data.get("currentTeam"))
 
-    # the API sometimes returns the exact same trophy more than once
-    seen = set()
-    unique_trophies = []
-    for t in trophies:
-        key = (t.get("place"), t.get("league"), t.get("country"), t.get("season"))
-        if key not in seen:
-            seen.add(key)
-            unique_trophies.append(t)
-
-    # most recent season first within each group; trophies with no
-    # season on record sink to the bottom of their group
-    unique_trophies.sort(key=lambda t: t.get("season") or "", reverse=True)
-
-    # group into Winner / 2nd Place / 3rd Place etc, winners shown first
-    place_rank = {"Winner": 0, "2nd Place": 1, "Runner-up": 1, "3rd Place": 2}
-    unique_trophies.sort(key=lambda t: place_rank.get(t.get("place", ""), 3))
-    grouped_trophies = [(place, list(items)) for place, items in
-                         groupby(unique_trophies, key=lambda t: t.get("place") or "Other")]
-
-    return render_template("player_profile.html", player=player_data, stats=all_stats,
-                           grouped_trophies=grouped_trophies, leagues=LEAGUES)
+    return render_template("player_profile.html", player=data, age=age,
+                           season_stats=season_stats, leagues=LEAGUES)
 
 
 if __name__ == "__main__":

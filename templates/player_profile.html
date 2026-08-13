@@ -3,102 +3,71 @@
 {% block content %}
 <div class="container">
     <div class="player-header">
-        {% if player.photo %}
-        <img src="{{ player.photo }}" alt="{{ player.name }}" class="player-header-photo">
-        {% endif %}
         <div class="player-header-info">
             <h2>{{ player.name }}</h2>
             <div class="team-meta">
                 {% if player.nationality %}
                 <span class="meta-tag">🌍 {{ player.nationality }}</span>
                 {% endif %}
-                {% if player.age %}
-                <span class="meta-tag">🎂 Age {{ player.age }}</span>
+                {% if age %}
+                <span class="meta-tag">🎂 Age {{ age }}</span>
                 {% endif %}
-                {% if player.height %}
-                <span class="meta-tag">📏 {{ player.height }}</span>
+                {% if player.position %}
+                <span class="meta-tag">📍 {{ player.position }}</span>
                 {% endif %}
-                {% if player.weight %}
-                <span class="meta-tag">⚖️ {{ player.weight }}</span>
+                {% if player.shirtNumber %}
+                <span class="meta-tag">#️⃣ {{ player.shirtNumber }}</span>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    {% for item in stats %}
-    {% set s = item.statistics[0] %}
+    {% if player.currentTeam %}
     <div class="section">
-        <h3>{{ s.league.name }} — {{ s.team.name }}</h3>
+        <h3>Current Club</h3>
+        <div class="match-card">
+            <div class="match-teams">
+                <a href="/team/{{ player.currentTeam.id }}" class="team team-link home">
+                    {% if player.currentTeam.crest %}
+                    <img src="{{ player.currentTeam.crest }}" alt="" width="22">
+                    {% endif %}
+                    {{ player.currentTeam.name }}
+                </a>
+            </div>
+            {% if player.currentTeam.contract and player.currentTeam.contract.until %}
+            <div class="match-status">
+                <span style="color:var(--text-secondary); font-size:12px;">Contract until {{ player.currentTeam.contract.until }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="section">
+        <h3>Season Stats</h3>
+        {% if season_stats %}
         <div class="stats-cards">
             <div class="stat-box">
-                <span class="stat-number">{{ s.games.appearences or 0 }}</span>
-                <span class="stat-label">Appearances</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-number">{{ s.games.minutes or 0 }}</span>
-                <span class="stat-label">Minutes</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-number" style="color:#238636;">{{ s.goals.total or 0 }}</span>
+                <span class="stat-number" style="color:#238636;">{{ season_stats.goals }}</span>
                 <span class="stat-label">Goals</span>
             </div>
             <div class="stat-box">
-                <span class="stat-number" style="color:#238636;">{{ s.goals.assists or 0 }}</span>
+                <span class="stat-number" style="color:#238636;">{{ season_stats.assists }}</span>
                 <span class="stat-label">Assists</span>
             </div>
             <div class="stat-box">
-                <span class="stat-number">{{ s.shots.total or 0 }}</span>
-                <span class="stat-label">Shots</span>
+                <span class="stat-number">{{ season_stats.penalties }}</span>
+                <span class="stat-label">Penalties</span>
             </div>
             <div class="stat-box">
-                <span class="stat-number">{{ s.passes.total or 0 }}</span>
-                <span class="stat-label">Passes</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-number">{{ s.dribbles.attempts or 0 }}</span>
-                <span class="stat-label">Dribble Attempts</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-number">{{ s.dribbles.success or 0 }}</span>
-                <span class="stat-label">Dribbles Won</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-number" style="color:#e3b341;">{{ s.cards.yellow or 0 }}</span>
-                <span class="stat-label">Yellow Cards</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-number" style="color:#da3633;">{{ s.cards.red or 0 }}</span>
-                <span class="stat-label">Red Cards</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-number">{{ s.games.rating[:4] if s.games.rating else 'N/A' }}</span>
-                <span class="stat-label">Rating</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-number">{{ s.games.position or 'N/A' }}</span>
-                <span class="stat-label">Position</span>
+                <span class="stat-number">{{ season_stats.played_matches }}</span>
+                <span class="stat-label">Matches Played</span>
             </div>
         </div>
+        <p style="color: var(--text-secondary); font-size:12px; margin-top:10px;">{{ season_stats.competition }} — via top scorers/assisters leaderboard</p>
+        {% else %}
+        <p style="color: var(--text-secondary); padding: 20px 0;">No season stats available — this player isn't currently on a league's top scorers/assisters leaderboard.</p>
+        {% endif %}
     </div>
-    {% endfor %}
-
-    {% if grouped_trophies %}
-    <div class="section">
-        <h3>🏆 Trophy Cabinet</h3>
-        {% for place, items in grouped_trophies %}
-        <div class="trophy-group">
-            <h4 class="trophy-group-title trophy-group-{{ place|replace(' ', '-')|lower }}">{{ place }} · {{ items|length }}</h4>
-            <div class="trophy-grid">
-                {% for t in items %}
-                <div class="trophy-card {% if place == 'Winner' %}trophy-winner{% endif %}">
-                    <strong>{{ t.league }}</strong>
-                    <span class="trophy-meta">{{ t.country }}{% if t.season %} · {{ t.season }}{% endif %}</span>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
 </div>
 {% endblock %}

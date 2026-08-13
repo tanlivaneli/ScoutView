@@ -22,9 +22,7 @@ Live football statistics across Europe's top leagues — built with Python, Flas
 
 - **Backend:** Python, Flask
 - **Frontend:** HTML/Jinja2 templates, vanilla CSS and JavaScript (no frontend framework)
-- **Data sources:**
-  - [football-data.org](https://www.football-data.org/) — standings, results, fixtures, scorers, team data
-  - [API-Sports (API-Football)](https://www.api-football.com/) — player stats, player/team trophies
+- **Data source:** [football-data.org](https://www.football-data.org/) — standings, results, fixtures, scorers, team data, and player search/profiles
 
 ## Running Locally
 
@@ -42,10 +40,9 @@ Live football statistics across Europe's top leagues — built with Python, Flas
    pip install -r requirements.txt
    ```
 
-3. Get free API keys from [football-data.org](https://www.football-data.org/client/register) and [API-Sports](https://dashboard.api-football.com/register), then create a `.env` file in the project root (see `.env.example`):
+3. Get a free API key from [football-data.org](https://www.football-data.org/client/register), then create a `.env` file in the project root (see `.env.example`):
    ```
    FOOTBALL_DATA_API_KEY=your_key_here
-   API_SPORTS_KEY=your_key_here
    ```
 
 4. Run the app:
@@ -56,18 +53,18 @@ Live football statistics across Europe's top leagues — built with Python, Flas
 
 ## Known Limitations
 
-This project runs entirely on free-tier API plans, which come with a couple of real constraints worth knowing about:
+This project runs entirely on football-data.org's free-tier plan, which comes with a couple of real constraints worth knowing about:
 
-- **Player season data is capped at 2024** — API-Sports' free plan only includes seasons 2022–2024, so player stats and search reflect that season rather than the current one. Team standings/results/fixtures are unaffected, since those come from football-data.org and are always current.
-- **API-Sports allows 100 requests/day** on the free tier, shared across all visitors. The app caches responses to minimize this, and shows a clear message if the daily quota is reached rather than failing silently.
-- **Club trophy data is hand-curated**, not live — neither API offers a club honours endpoint, so major honours for ~65 clubs are manually researched and will need periodic updates as seasons conclude. Player trophies, by contrast, are pulled live.
+- **Player profiles are bio-only** — name, nationality, age, position, shirt number, and current club. The free tier has no per-player stats endpoint (shots, passes, cards, rating), so a player's season goals/assists only show up if they rank high enough to appear on their competition's top scorers/assisters leaderboard.
+- **No player trophy histories** — neither the free nor a paid football-data.org plan offers a player honours endpoint, so this isn't shown on player profiles (club trophies, below, are unaffected — that's separate hand-curated data).
+- **Club trophy data is hand-curated**, not live — football-data.org has no club-honours endpoint, so major honours for ~65 clubs are manually researched and will need periodic updates as seasons conclude.
 
 ## Roadmap
 
 This is an active side project, not a finished product — a few things planned for the future:
 
 - Expand club trophy coverage beyond the current ~65 major clubs
-- Upgrade to a paid API tier for current-season player stats (currently capped at 2022–2024)
+- Find a reliable, ToS-compliant source for deeper player stats and trophy histories
 - Add match-level statistics (possession, shots, cards) if a suitable data source is found
 - General UI polish and performance improvements as I keep learning
 
