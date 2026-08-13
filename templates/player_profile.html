@@ -41,25 +41,28 @@
     <div class="section">
         <h3>Season Stats</h3>
         {% if season_stats %}
+        {% for s in season_stats %}
+        <h4 style="color: var(--text-secondary); font-size:13px; font-weight:600; margin:{{ '0 0 8px' if loop.first else '20px 0 8px' }};">{{ s.competition }}</h4>
         <div class="stats-cards">
             <div class="stat-box">
-                <span class="stat-number" style="color:#238636;">{{ season_stats.goals }}</span>
+                <span class="stat-number" style="color:#238636;">{{ s.goals }}</span>
                 <span class="stat-label">Goals</span>
             </div>
             <div class="stat-box">
-                <span class="stat-number" style="color:#238636;">{{ season_stats.assists }}</span>
+                <span class="stat-number" style="color:#238636;">{{ s.assists }}</span>
                 <span class="stat-label">Assists</span>
             </div>
             <div class="stat-box">
-                <span class="stat-number">{{ season_stats.penalties }}</span>
+                <span class="stat-number">{{ s.penalties }}</span>
                 <span class="stat-label">Penalties</span>
             </div>
             <div class="stat-box">
-                <span class="stat-number">{{ season_stats.played_matches }}</span>
+                <span class="stat-number">{{ s.played_matches }}</span>
                 <span class="stat-label">Matches Played</span>
             </div>
         </div>
-        <p style="color: var(--text-secondary); font-size:12px; margin-top:10px;">{{ season_stats.competition }} — goals/assists only, via the scorers leaderboard</p>
+        {% endfor %}
+        <p style="color: var(--text-secondary); font-size:12px; margin-top:10px;">Goals/assists only, via each competition's scorers leaderboard</p>
         {% else %}
         <p style="color: var(--text-secondary); padding: 20px 0;">No season stats available — either the season hasn't started yet, or this player hasn't scored or assisted this season.</p>
         {% endif %}

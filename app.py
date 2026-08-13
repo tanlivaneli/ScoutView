@@ -769,21 +769,26 @@ def get_player_season_stats(player_id, competition_codes):
     endpoint — the closest it offers is the scorers list per competition,
     which (despite the "top scorers" framing) returns every player with
     at least one goal when given a high enough limit, not just a small
-    top-N. Players with zero goals this season (many defenders/keepers)
-    still won't have a stats endpoint to pull from at all."""
+    top-N. Returns one entry per competition the player has goals/assists
+    in (e.g. a player can have separate domestic-league and Champions
+    League tallies) rather than stopping at the first match. Players
+    with zero goals this season (many defenders/keepers) still won't
+    have a stats endpoint to pull from at all."""
+    results = []
     for code in competition_codes:
         url = f"{BASE_URL}/competitions/{code}/scorers?limit=500"
         data = cached_get(url, HEADERS)
         for item in data.get("scorers", []):
             if item.get("player", {}).get("id") == player_id:
-                return {
+                results.append({
                     "competition": LEAGUES[code],
                     "goals": item.get("goals") or 0,
                     "assists": item.get("assists") or 0,
                     "penalties": item.get("penalties") or 0,
                     "played_matches": item.get("playedMatches") or 0,
-                }
-    return None
+                })
+                break
+    return results
 
 
 @app.route("/player/<int:player_id>")
