@@ -59,9 +59,9 @@
                 <span class="stat-label">Matches Played</span>
             </div>
         </div>
-        <p style="color: var(--text-secondary); font-size:12px; margin-top:10px;">{{ season_stats.competition }} — via top scorers/assisters leaderboard</p>
+        <p style="color: var(--text-secondary); font-size:12px; margin-top:10px;">{{ season_stats.competition }} — goals/assists only, via the scorers leaderboard</p>
         {% else %}
-        <p style="color: var(--text-secondary); padding: 20px 0;">No season stats available — this player isn't currently on a league's top scorers/assisters leaderboard.</p>
+        <p style="color: var(--text-secondary); padding: 20px 0;">No season stats available — either the season hasn't started yet, or this player hasn't scored or assisted this season.</p>
         {% endif %}
     </div>
 </div>

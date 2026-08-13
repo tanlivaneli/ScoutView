@@ -34,23 +34,33 @@ def cached_get(url, headers, ttl_seconds=300):
     """GET a URL and cache the parsed JSON for ttl_seconds. Team/league
     data barely changes minute to minute, so this cuts external API calls
     (and the odds of hitting a rate limit) dramatically for identical
-    requests made close together. Error responses (e.g. rate limits) are
-    never cached, so a transient failure doesn't stick around for the
-    full TTL once the underlying issue clears."""
+    requests made close together. Non-200 responses (e.g. rate limits,
+    which football-data.org returns as a 429 with no distinguishing key
+    in the body) are never cached, so a transient failure doesn't stick
+    around for the full TTL once the underlying issue clears."""
     now = time.time()
     entry = _cache.get(url)
     if entry and (now - entry["time"]) < ttl_seconds:
         return entry["data"]
 
-    response = requests.get(url, headers=headers)
-    data = response.json()
-    if not data.get("errors"):
+    # A network hiccup or rate limit on any one call (football-data.org's
+    # free tier allows 10 requests/minute, easy to brush against when a
+    # single page needs several calls) shouldn't take the whole page down
+    # — degrade to an empty response, which every call site already
+    # handles via .get(..., default). Failures are never cached (below),
+    # so the next request past the rate-limit window recovers cleanly.
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        data = response.json()
+    except (requests.RequestException, ValueError):
+        return {}
+
+    if response.status_code == 200:
         _cache[url] = {"time": now, "data": data}
     return data
 
-# Neither football-data.org nor API-Sports has a club trophies endpoint
-# (only players/coaches, via API-Sports). This is a hand-maintained list
-# of major honours for the biggest clubs across our 5 leagues, accurate
+# football-data.org has no club trophies endpoint. This is a hand-maintained
+# list of major honours for the biggest clubs across our 5 leagues, accurate
 # as of mid-2026 — update the counts as seasons pass.
 TEAM_HONOURS = {
     # ---- Premier League ----
@@ -734,28 +744,35 @@ def find_club_team(player_id):
     """The persons/{id} endpoint's currentTeam can be a national team if
     the player was recently on international duty (football-data.org
     returns whichever squad they were most recently active with), so
-    resolve their actual club from the same 6-league squad data
-    player_search matches against instead of trusting it blindly."""
-    for t in get_all_teams():
-        for p in t.get("squad", []):
-            if p["id"] == player_id:
-                return t
-    return None
+    resolve their actual club from the same squad data player_search
+    matches against instead of trusting it blindly. Also returns which
+    of our 6 competition codes the player is actually registered under
+    (a club's own runningCompetitions field isn't reliable for this —
+    it can omit Champions League even for clubs actively playing in
+    it), so get_player_season_stats only has to check those instead of
+    blindly querying all 6 on every profile view — each one is a call
+    against a free tier that's easy to rate-limit."""
+    club_team = None
+    codes = set()
+    for code in LEAGUES:
+        url = f"{BASE_URL}/competitions/{code}/teams"
+        data = cached_get(url, HEADERS, ttl_seconds=3600)
+        for t in data.get("teams", []):
+            if any(p["id"] == player_id for p in t.get("squad", [])):
+                club_team = club_team or t
+                codes.add(code)
+    return club_team, codes
 
 
-def get_player_season_stats(player_id, current_team):
+def get_player_season_stats(player_id, competition_codes):
     """football-data.org's free tier has no per-player season-stats
-    endpoint — the closest it offers is the top-scorers leaderboard per
-    competition. Cross-reference that against whichever of our 6 leagues
-    the player's current club competes in, so goals/assists are shown
-    for players who rank high enough to appear on it."""
-    if not current_team:
-        return None
-    for comp in current_team.get("runningCompetitions", []):
-        code = comp.get("code")
-        if code not in LEAGUES:
-            continue
-        url = f"{BASE_URL}/competitions/{code}/scorers?limit=100"
+    endpoint — the closest it offers is the scorers list per competition,
+    which (despite the "top scorers" framing) returns every player with
+    at least one goal when given a high enough limit, not just a small
+    top-N. Players with zero goals this season (many defenders/keepers)
+    still won't have a stats endpoint to pull from at all."""
+    for code in competition_codes:
+        url = f"{BASE_URL}/competitions/{code}/scorers?limit=500"
         data = cached_get(url, HEADERS)
         for item in data.get("scorers", []):
             if item.get("player", {}).get("id") == player_id:
@@ -784,8 +801,8 @@ def player_profile(player_id):
         today = date.today()
         age = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
 
-    club_team = find_club_team(player_id)
-    season_stats = get_player_season_stats(player_id, club_team)
+    club_team, club_codes = find_club_team(player_id)
+    season_stats = get_player_season_stats(player_id, club_codes)
 
     return render_template("player_profile.html", player=data, age=age, club_team=club_team,
                            season_stats=season_stats, leagues=LEAGUES)
