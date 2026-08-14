@@ -2,6 +2,7 @@ import os
 import time
 import unicodedata
 from datetime import date
+from itertools import groupby
 from flask import Flask, render_template, request, redirect, url_for
 import requests
 from dotenv import load_dotenv
@@ -23,6 +24,30 @@ LEAGUES = {
     "CL": "Champions League"
 }
 
+# Optional local-only enrichment. API-Sports' free tier gets suspended when
+# used to power public traffic (that's what happened when this app was
+# deployed with it), so it must never be set in a deployed environment —
+# only in a local .env, never committed. Every use of RAPID_KEY below is
+# guarded, so the app behaves identically to the deployed version whenever
+# it's absent, which is always true on Render.
+RAPID_KEY = os.environ.get("API_SPORTS_KEY")
+RAPID_HOST = "https://v3.football.api-sports.io"
+RAPID_HEADERS = {"x-apisports-key": RAPID_KEY}
+
+RAPID_LEAGUES = {
+    "PL": 39,
+    "BL1": 78,
+    "PD": 140,
+    "SA": 135,
+    "FL1": 61,
+    "CL": 2,
+}
+
+# Seasons in API-Sports are labeled by the year they start (e.g. the 2025/26
+# season is "2025"). The free plan only has access to seasons 2022-2024 —
+# bumping this without a paid plan just returns zero results.
+RAPID_SEASON = 2024
+
 # Simple in-memory cache so repeat page loads (e.g. two people checking the
 # same standings, or one person clicking back and forth) don't re-hit the
 # external APIs every time. Storing this in a plain dict is fine for a
@@ -30,14 +55,17 @@ LEAGUES = {
 _cache = {}
 
 
-def cached_get(url, headers, ttl_seconds=300):
+def cached_get(url, headers, ttl_seconds=300, is_error=None):
     """GET a URL and cache the parsed JSON for ttl_seconds. Team/league
     data barely changes minute to minute, so this cuts external API calls
     (and the odds of hitting a rate limit) dramatically for identical
     requests made close together. Non-200 responses (e.g. rate limits,
     which football-data.org returns as a 429 with no distinguishing key
     in the body) are never cached, so a transient failure doesn't stick
-    around for the full TTL once the underlying issue clears."""
+    around for the full TTL once the underlying issue clears. `is_error`
+    is an optional extra check for APIs (like API-Sports) that report
+    failures inside an HTTP-200 body instead of via status code — also
+    skips caching when it returns True."""
     now = time.time()
     entry = _cache.get(url)
     if entry and (now - entry["time"]) < ttl_seconds:
@@ -55,7 +83,7 @@ def cached_get(url, headers, ttl_seconds=300):
     except (requests.RequestException, ValueError):
         return {}
 
-    if response.status_code == 200:
+    if response.status_code == 200 and not (is_error and is_error(data)):
         _cache[url] = {"time": now, "data": data}
     return data
 
@@ -791,6 +819,97 @@ def get_player_season_stats(player_id, competition_codes):
     return results
 
 
+def find_api_sports_player(name, club_name):
+    """Optional local-only enrichment — see RAPID_KEY above; this is never
+    active on the deployed site. Searches API-Sports by surname first (it
+    matches more reliably there than a full "first last" search), falling
+    back to the full name, then disambiguates same-name collisions using
+    club_name via the same fuzzy teams_match already used for club
+    honours (API-Sports and football-data.org don't always format club
+    names identically)."""
+    if not RAPID_KEY:
+        return None
+
+    ascii_name = strip_accents(name)
+    surname = ascii_name.split()[-1] if " " in ascii_name else ascii_name
+    search_terms = [surname]
+    if surname != ascii_name:
+        search_terms.append(ascii_name)
+
+    is_api_sports_error = lambda d: d.get("errors")
+
+    candidates = {}
+    for term in search_terms:
+        if candidates:
+            break
+        for league_id in RAPID_LEAGUES.values():
+            url = f"{RAPID_HOST}/players?search={term}&league={league_id}&season={RAPID_SEASON}"
+            data = cached_get(url, RAPID_HEADERS, ttl_seconds=3600, is_error=is_api_sports_error)
+            if data.get("errors"):
+                continue
+            for item in data.get("response", []):
+                candidates[item["player"]["id"]] = item
+
+    matches = list(candidates.values())
+    if not matches:
+        return None
+
+    if club_name:
+        club_matches = [
+            m for m in matches
+            if (m.get("statistics") or [{}])[0].get("team", {}).get("name")
+            and teams_match(club_name, m["statistics"][0]["team"]["name"])
+        ]
+        if club_matches:
+            matches = club_matches
+
+    return matches[0] if len(matches) == 1 else None
+
+
+def get_api_sports_details(api_player_id):
+    """Detailed per-competition stats and trophy history for a player
+    already resolved via find_api_sports_player. Local-only, see
+    RAPID_KEY above."""
+    is_api_sports_error = lambda d: d.get("errors")
+
+    url = f"{RAPID_HOST}/players?id={api_player_id}&season={RAPID_SEASON}"
+    data = cached_get(url, RAPID_HEADERS, ttl_seconds=3600, is_error=is_api_sports_error)
+    if data.get("errors") or not data.get("response"):
+        return None
+
+    entry = data["response"][0]
+    stats = [{"statistics": [comp]} for comp in entry.get("statistics", [])]
+
+    trophies_url = f"{RAPID_HOST}/trophies?player={api_player_id}"
+    trophies_data = cached_get(trophies_url, RAPID_HEADERS, ttl_seconds=3600, is_error=is_api_sports_error)
+    trophies = [] if trophies_data.get("errors") else trophies_data.get("response", [])
+
+    # the API sometimes returns the exact same trophy more than once
+    seen = set()
+    unique_trophies = []
+    for t in trophies:
+        key = (t.get("place"), t.get("league"), t.get("country"), t.get("season"))
+        if key not in seen:
+            seen.add(key)
+            unique_trophies.append(t)
+
+    # most recent season first within each group; trophies with no
+    # season on record sink to the bottom of their group
+    unique_trophies.sort(key=lambda t: t.get("season") or "", reverse=True)
+
+    # group into Winner / 2nd Place / 3rd Place etc, winners shown first
+    place_rank = {"Winner": 0, "2nd Place": 1, "Runner-up": 1, "3rd Place": 2}
+    unique_trophies.sort(key=lambda t: place_rank.get(t.get("place", ""), 3))
+    grouped_trophies = [(place, list(items)) for place, items in
+                         groupby(unique_trophies, key=lambda t: t.get("place") or "Other")]
+
+    return {
+        "photo": entry.get("player", {}).get("photo"),
+        "stats": stats,
+        "grouped_trophies": grouped_trophies,
+    }
+
+
 @app.route("/player/<int:player_id>")
 def player_profile(player_id):
     url = f"{BASE_URL}/persons/{player_id}"
@@ -809,8 +928,14 @@ def player_profile(player_id):
     club_team, club_codes = find_club_team(player_id)
     season_stats = get_player_season_stats(player_id, club_codes)
 
+    enrichment = None
+    if RAPID_KEY:
+        api_player = find_api_sports_player(data.get("name"), club_team.get("name") if club_team else None)
+        if api_player:
+            enrichment = get_api_sports_details(api_player["player"]["id"])
+
     return render_template("player_profile.html", player=data, age=age, club_team=club_team,
-                           season_stats=season_stats, leagues=LEAGUES)
+                           season_stats=season_stats, enrichment=enrichment, leagues=LEAGUES)
 
 
 if __name__ == "__main__":
