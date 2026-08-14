@@ -819,14 +819,17 @@ def get_player_season_stats(player_id, competition_codes):
     return results
 
 
-def find_api_sports_player(name, club_name):
+def find_api_sports_player(name, club_name, competition_codes):
     """Optional local-only enrichment — see RAPID_KEY above; this is never
     active on the deployed site. Searches API-Sports by surname first (it
     matches more reliably there than a full "first last" search), falling
     back to the full name, then disambiguates same-name collisions using
     club_name via the same fuzzy teams_match already used for club
     honours (API-Sports and football-data.org don't always format club
-    names identically)."""
+    names identically). Only searches the competitions competition_codes
+    says the player is actually registered under (from find_club_team)
+    rather than all 6 — API-Sports' free tier caps at 100 requests/day
+    total, easy to burn through searching every league for every player."""
     if not RAPID_KEY:
         return None
 
@@ -836,13 +839,14 @@ def find_api_sports_player(name, club_name):
     if surname != ascii_name:
         search_terms.append(ascii_name)
 
+    league_ids = [RAPID_LEAGUES[c] for c in competition_codes if c in RAPID_LEAGUES] or list(RAPID_LEAGUES.values())
     is_api_sports_error = lambda d: d.get("errors")
 
     candidates = {}
     for term in search_terms:
         if candidates:
             break
-        for league_id in RAPID_LEAGUES.values():
+        for league_id in league_ids:
             url = f"{RAPID_HOST}/players?search={term}&league={league_id}&season={RAPID_SEASON}"
             data = cached_get(url, RAPID_HEADERS, ttl_seconds=3600, is_error=is_api_sports_error)
             if data.get("errors"):
@@ -930,7 +934,7 @@ def player_profile(player_id):
 
     enrichment = None
     if RAPID_KEY:
-        api_player = find_api_sports_player(data.get("name"), club_team.get("name") if club_team else None)
+        api_player = find_api_sports_player(data.get("name"), club_team.get("name") if club_team else None, club_codes)
         if api_player:
             enrichment = get_api_sports_details(api_player["player"]["id"])
 
